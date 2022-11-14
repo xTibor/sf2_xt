@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-
-pub enum RawChunk<'a> {
+pub enum RiffChunk<'a> {
     Container {
         container_type: &'a [u8],
         chunk_id: &'a [u8],
@@ -12,48 +10,48 @@ pub enum RawChunk<'a> {
     },
 }
 
-impl<'a> RawChunk<'a> {
-    pub fn subchunks(&self) -> RawChunkIterator<'a> {
+impl<'a> RiffChunk<'a> {
+    pub fn subchunks(&self) -> RiffChunkIterator<'a> {
         match *self {
-            RawChunk::Container { chunk_data, .. } => RawChunkIterator::new(chunk_data),
-            RawChunk::Normal { .. } => panic!("Normal chunks cannot have subchunks"),
+            RiffChunk::Container { chunk_data, .. } => RiffChunkIterator::new(chunk_data),
+            RiffChunk::Normal { .. } => panic!("Normal chunks cannot have subchunks"),
         }
     }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-pub struct RawChunkIterator<'a> {
+pub struct RiffChunkIterator<'a> {
     buffer: &'a [u8],
     i: usize,
 }
 
-impl<'a> RawChunkIterator<'a> {
+impl<'a> RiffChunkIterator<'a> {
     pub fn new(buffer: &'a [u8]) -> Self {
         Self { buffer, i: 0 }
     }
 }
 
-impl<'a> Iterator for RawChunkIterator<'a> {
-    type Item = RawChunk<'a>;
+impl<'a> Iterator for RiffChunkIterator<'a> {
+    type Item = RiffChunk<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.i + 8 <= self.buffer.len() {
             let chunk_id = &self.buffer[self.i..self.i + 4];
-            let has_subchunks = (chunk_id == b"RIFF") || (chunk_id == b"LIST");
+            let is_container = (chunk_id == b"RIFF") || (chunk_id == b"LIST");
 
             let chunk_size =
                 u32::from_le_bytes(self.buffer[self.i + 4..self.i + 8].try_into().unwrap());
 
             if self.i + 8 + (chunk_size as usize) <= self.buffer.len() {
-                let chunk = if has_subchunks {
+                let chunk = if is_container {
                     let container_type = chunk_id;
                     let chunk_id = &self.buffer[self.i + 8..self.i + 12];
 
                     let chunk_data =
                         &self.buffer[self.i + 12..self.i + 12 + ((chunk_size as usize) - 4)];
 
-                    Some(RawChunk::Container {
+                    Some(RiffChunk::Container {
                         container_type,
                         chunk_id,
                         chunk_data,
@@ -61,7 +59,7 @@ impl<'a> Iterator for RawChunkIterator<'a> {
                 } else {
                     let chunk_data = &self.buffer[self.i + 8..self.i + 8 + (chunk_size as usize)];
 
-                    Some(RawChunk::Normal {
+                    Some(RiffChunk::Normal {
                         chunk_id,
                         chunk_data,
                     })
@@ -77,26 +75,5 @@ impl<'a> Iterator for RawChunkIterator<'a> {
         } else {
             None
         }
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-pub enum RiffChunk<'a> {
-    Container {
-        chunk_id: String,
-        children: HashMap<String, Box<RiffChunk<'a>>>,
-    },
-    Chunk {
-        chunk_id: String,
-        chunk_data: &'a [u8],
-    },
-}
-
-pub struct RiffDocument {}
-
-impl<'a> RiffDocument {
-    pub fn new(buffer: &'a [u8]) -> Self {
-        RiffDocument {}
     }
 }
