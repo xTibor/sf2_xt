@@ -1,115 +1,39 @@
+#![feature(int_roundings)]
+
 use std::{fs::File, path::Path};
 
 use memmap::MmapOptions;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+mod riff;
+use riff::{RawChunk, RawChunkIterator};
 
-pub enum RiffChunk<'a> {
-    Container {
-        identifier: &'a [u8],
-        chunk_data: &'a [u8],
-        chunk_type: &'a [u8],
-    },
-    Normal {
-        identifier: &'a [u8],
-        chunk_data: &'a [u8],
-    },
-}
-
-impl<'a> RiffChunk<'a> {
-    pub fn subchunks(&self) -> RiffChunkIterator<'a> {
-        match *self {
-            RiffChunk::Container { chunk_data, .. } => RiffChunkIterator::new(chunk_data),
-            RiffChunk::Normal { .. } => panic!("Normal chunks cannot have subchunks"),
-        }
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-pub struct RiffChunkIterator<'a> {
-    buffer: &'a [u8],
-    i: usize,
-}
-
-impl<'a> RiffChunkIterator<'a> {
-    pub fn new(buffer: &'a [u8]) -> Self {
-        Self { buffer, i: 0 }
-    }
-}
-
-impl<'a> Iterator for RiffChunkIterator<'a> {
-    type Item = RiffChunk<'a>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.i + 8 <= self.buffer.len() {
-            let identifier = &self.buffer[self.i..self.i + 4];
-
-            let has_subchunks = (identifier == &[b'R', b'I', b'F', b'F'])
-                || (identifier == &[b'L', b'I', b'S', b'T']);
-
-            let chunk_size =
-                u32::from_le_bytes(self.buffer[self.i + 4..self.i + 8].try_into().unwrap());
-
-            if self.i + 8 + (chunk_size as usize) <= self.buffer.len() {
-                if has_subchunks {
-                    let chunk_type = &self.buffer[self.i + 8..self.i + 12];
-                    let chunk_data =
-                        &self.buffer[self.i + 12..self.i + 12 + ((chunk_size as usize) - 4)];
-                    self.i = self.i + 8 + (chunk_size as usize);
-
-                    Some(RiffChunk::Container {
-                        identifier,
-                        chunk_data,
-                        chunk_type,
-                    })
-                } else {
-                    let chunk_data = &self.buffer[self.i + 8..self.i + 8 + (chunk_size as usize)];
-                    self.i = self.i + 8 + (chunk_size as usize);
-
-                    Some(RiffChunk::Normal {
-                        identifier,
-                        chunk_data,
-                    })
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-pub fn dump_riff_structure<'a>(chunk: RiffChunk<'a>, chunk_level: usize) {
+pub fn dump_riff_structure(chunk: &RawChunk, chunk_level: usize) {
     match chunk {
-        RiffChunk::Container {
-            identifier,
+        RawChunk::Container {
+            container_type,
+            chunk_id,
             chunk_data,
-            chunk_type,
         } => {
             println!(
-                "{:chunk_level$}[{}] {} ({})",
+                "{:chunk_level$}{} [{}] ({})",
                 "",
-                String::from_utf8_lossy(identifier),
-                String::from_utf8_lossy(chunk_type),
+                String::from_utf8_lossy(chunk_id),
+                String::from_utf8_lossy(container_type),
                 chunk_data.len()
             );
 
             for chunk in chunk.subchunks() {
-                dump_riff_structure(chunk, chunk_level + 1);
+                dump_riff_structure(&chunk, chunk_level + 1);
             }
         }
-        RiffChunk::Normal {
-            identifier,
+        RawChunk::Normal {
+            chunk_id,
             chunk_data,
         } => {
             println!(
                 "{:chunk_level$}{} ({})",
                 "",
-                String::from_utf8_lossy(identifier),
+                String::from_utf8_lossy(chunk_id),
                 chunk_data.len()
             );
         }
@@ -123,7 +47,7 @@ fn main() {
         unsafe { MmapOptions::new().map(&file).unwrap() }
     };
 
-    for chunk in RiffChunkIterator::new(sf2_soundfont_bin) {
-        dump_riff_structure(chunk, 0);
+    for chunk in RawChunkIterator::new(sf2_soundfont_bin) {
+        dump_riff_structure(&chunk, 0);
     }
 }
