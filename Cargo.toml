@@ -3,5 +3,13 @@ name = "sf2-memmap"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "sf2lib"
+path = "src/lib/lib.rs"
+
+[[bin]]
+name = "riff-info"
+path = "src/bin/riff_info.rs"
+
 [dependencies]
 memmap = "0.7.0"

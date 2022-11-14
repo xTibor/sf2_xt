@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 pub enum RawChunk<'a> {
     Container {
         container_type: &'a [u8],
@@ -75,5 +77,26 @@ impl<'a> Iterator for RawChunkIterator<'a> {
         } else {
             None
         }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+pub enum RiffChunk<'a> {
+    Container {
+        chunk_id: String,
+        children: HashMap<String, Box<RiffChunk<'a>>>,
+    },
+    Chunk {
+        chunk_id: String,
+        chunk_data: &'a [u8],
+    },
+}
+
+pub struct RiffDocument {}
+
+impl<'a> RiffDocument {
+    pub fn new(buffer: &'a [u8]) -> Self {
+        RiffDocument {}
     }
 }
