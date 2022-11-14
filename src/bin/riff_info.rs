@@ -38,18 +38,16 @@ pub fn print_riff_chunk(chunk: &RawChunk, chunk_level: usize) {
 }
 
 fn main() {
-    let file_path = env::args().skip(1).next().expect("No input file argument");
+    let riff_path = env::args().skip(1).next().expect("No input file argument");
+    let riff_file = File::open(riff_path).expect("Failed to open input file");
 
-    let sf2_soundfont_bin: &[u8] = &{
-        let file = File::open(file_path).expect("Failed to open input file");
-        unsafe {
-            MmapOptions::new()
-                .map(&file)
-                .expect("Failed to mmap input file")
-        }
+    let riff_binary: &[u8] = unsafe {
+        &MmapOptions::new()
+            .map(&riff_file)
+            .expect("Failed to mmap input file")
     };
 
-    for chunk in RawChunkIterator::new(sf2_soundfont_bin) {
+    for chunk in RawChunkIterator::new(riff_binary) {
         print_riff_chunk(&chunk, 0);
     }
 }
