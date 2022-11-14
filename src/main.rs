@@ -45,30 +45,35 @@ impl<'a> Iterator for RiffChunkIterator<'a> {
         if self.i + 8 <= self.buffer.len() {
             let identifier = &self.buffer[self.i..self.i + 4];
 
-            let chunk_size =
-                u32::from_le_bytes(self.buffer[self.i + 4..self.i + 8].try_into().unwrap());
-
             let has_subchunks = (identifier == &[b'R', b'I', b'F', b'F'])
                 || (identifier == &[b'L', b'I', b'S', b'T']);
 
-            if has_subchunks {
-                let chunk_type = &self.buffer[self.i + 8..self.i + 12];
-                let chunk_data = &self.buffer[self.i + 12..self.i + 12 + ((chunk_size as usize) - 4)];
-                self.i = self.i + 12 + ((chunk_size as usize) - 4);
+            let chunk_size =
+                u32::from_le_bytes(self.buffer[self.i + 4..self.i + 8].try_into().unwrap());
 
-                Some(RiffChunk::Container {
-                    identifier,
-                    chunk_data,
-                    chunk_type,
-                })
+            if self.i + 8 + (chunk_size as usize) <= self.buffer.len() {
+                if has_subchunks {
+                    let chunk_type = &self.buffer[self.i + 8..self.i + 12];
+                    let chunk_data =
+                        &self.buffer[self.i + 12..self.i + 12 + ((chunk_size as usize) - 4)];
+                    self.i = self.i + 8 + (chunk_size as usize);
+
+                    Some(RiffChunk::Container {
+                        identifier,
+                        chunk_data,
+                        chunk_type,
+                    })
+                } else {
+                    let chunk_data = &self.buffer[self.i + 8..self.i + 8 + (chunk_size as usize)];
+                    self.i = self.i + 8 + (chunk_size as usize);
+
+                    Some(RiffChunk::Normal {
+                        identifier,
+                        chunk_data,
+                    })
+                }
             } else {
-                let chunk_data = &self.buffer[self.i + 8..self.i + 8 + (chunk_size as usize)];
-                self.i = self.i + 8 + (chunk_size as usize);
-
-                Some(RiffChunk::Normal {
-                    identifier,
-                    chunk_data,
-                })
+                None
             }
         } else {
             None
