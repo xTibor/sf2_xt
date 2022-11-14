@@ -1,5 +1,5 @@
-use std::env;
 use std::fs::File;
+use std::{env, str};
 
 use memmap::MmapOptions;
 use sf2lib::riff::{RawChunk, RawChunkIterator};
@@ -14,8 +14,8 @@ pub fn print_riff_chunk(chunk: &RawChunk, chunk_level: usize) {
             println!(
                 "{:chunk_level$}{} [{}] ({})",
                 "",
-                String::from_utf8_lossy(chunk_id),
-                String::from_utf8_lossy(container_type),
+                str::from_utf8(chunk_id).unwrap().escape_default(),
+                str::from_utf8(container_type).unwrap().escape_default(),
                 chunk_data.len()
             );
 
@@ -30,7 +30,7 @@ pub fn print_riff_chunk(chunk: &RawChunk, chunk_level: usize) {
             println!(
                 "{:chunk_level$}{} ({})",
                 "",
-                String::from_utf8_lossy(chunk_id),
+                str::from_utf8(chunk_id).unwrap().escape_default(),
                 chunk_data.len()
             );
         }
