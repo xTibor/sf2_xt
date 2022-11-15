@@ -1,4 +1,5 @@
-use std::{env, fs::File};
+use std::env;
+use std::fs::File;
 
 use memmap::MmapOptions;
 use sf2lib::riff::RiffChunk;
@@ -14,6 +15,5 @@ fn main() {
     };
 
     let riff_chunk = RiffChunk::new(&riff_binary);
-    println!("{:?}", riff_chunk.chunk_id());
-    println!("{:?}", riff_chunk.subchunk(b"INFO").unwrap().chunk_id());
+    println!("{:#?}", riff_chunk);
 }

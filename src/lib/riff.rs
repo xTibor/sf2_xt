@@ -1,3 +1,6 @@
+use std::fmt::{self, Debug};
+use std::str;
+
 pub enum RawChunk<'a> {
     Container {
         chunk_type: &'a [u8],
@@ -82,14 +85,36 @@ impl<'a> Iterator for RawChunkIterator<'a> {
 
 pub enum RiffChunk<'a> {
     Container {
-        chunk_type: &'a [u8],
-        chunk_id: &'a [u8],
+        chunk_type: &'a str,
+        chunk_id: &'a str,
         subchunks: Vec<RiffChunk<'a>>,
     },
     Normal {
-        chunk_id: &'a [u8],
+        chunk_id: &'a str,
         chunk_data: &'a [u8],
     },
+}
+
+impl<'a> Debug for RiffChunk<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RiffChunk::Container {
+                chunk_type,
+                chunk_id,
+                subchunks,
+            } => f
+                .debug_struct("RiffChunk::Container")
+                .field("chunk_type", chunk_type)
+                .field("chunk_id", chunk_id)
+                .field("subchunks", subchunks)
+                .finish(),
+            RiffChunk::Normal { chunk_id, .. } => f
+                .debug_struct("RiffChunk::Normal")
+                .field("chunk_id", chunk_id)
+                .field("chunk_data", &"...")
+                .finish(),
+        }
+    }
 }
 
 impl<'a> From<RawChunk<'a>> for RiffChunk<'a> {
@@ -105,8 +130,8 @@ impl<'a> From<RawChunk<'a>> for RiffChunk<'a> {
                     .collect::<Vec<_>>();
 
                 RiffChunk::Container {
-                    chunk_type,
-                    chunk_id,
+                    chunk_type: str::from_utf8(chunk_type).unwrap(),
+                    chunk_id: str::from_utf8(chunk_id).unwrap(),
                     subchunks,
                 }
             }
@@ -114,7 +139,7 @@ impl<'a> From<RawChunk<'a>> for RiffChunk<'a> {
                 chunk_id,
                 chunk_data,
             } => RiffChunk::Normal {
-                chunk_id,
+                chunk_id: str::from_utf8(chunk_id).unwrap(),
                 chunk_data,
             },
         }
@@ -126,7 +151,7 @@ impl<'a> RiffChunk<'a> {
         RawChunkIterator::new(buffer).next().unwrap().into()
     }
 
-    pub fn chunk_id(&self) -> &'a [u8] {
+    pub fn chunk_id(&self) -> &'a str {
         match self {
             RiffChunk::Container { chunk_id, .. } => chunk_id,
             RiffChunk::Normal { chunk_id, .. } => chunk_id,
@@ -140,7 +165,7 @@ impl<'a> RiffChunk<'a> {
         }
     }
 
-    pub fn subchunk(&self, chunk_id: &[u8]) -> Option<&RiffChunk<'a>> {
+    pub fn subchunk(&self, chunk_id: &str) -> Option<&RiffChunk<'a>> {
         match self {
             RiffChunk::Container { subchunks, .. } => subchunks
                 .iter()
