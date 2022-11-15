@@ -150,15 +150,17 @@ impl<'a> TryFrom<RawChunk<'a>> for RiffChunk<'a> {
     type Error = RiffError;
 
     fn try_from(raw_chunk: RawChunk<'a>) -> RiffResult<Self> {
-        fn from_fourcc(v: &[u8]) -> RiffResult<&str> {
-            assert_eq!(v.len(), 4);
-            let (left, right) = v.split_at(v.partition_point(|&b| b.is_ascii_alphanumeric()));
+        fn from_fourcc(input: &[u8]) -> RiffResult<&str> {
+            let (left, right) = {
+                let split_position = input.iter().position(|&b| b == b' ').unwrap_or(input.len());
+                input.split_at(split_position)
+            };
 
-            if !left.is_empty()
-                && left.iter().all(|&b| b.is_ascii_alphanumeric())
+            if left.iter().all(|&b| b.is_ascii_alphanumeric())
                 && right.iter().all(|&b| b == b' ')
+                && !left.is_empty()
             {
-                Ok(unsafe { str::from_utf8_unchecked(v) })
+                Ok(unsafe { str::from_utf8_unchecked(input) })
             } else {
                 Err(RiffError::MalformedIdentifier)
             }
