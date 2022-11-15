@@ -225,12 +225,9 @@ impl<'a> RiffChunk<'a> {
         }
     }
 
-    pub fn subchunks(&self, chunk_id: &str) -> RiffResult<Vec<&RiffChunk<'a>>> {
+    pub fn subchunks(&self) -> RiffResult<&[RiffChunk<'a>]> {
         match self {
-            RiffChunk::Container { subchunks, .. } => Ok(subchunks
-                .iter()
-                .filter(|subchunk| subchunk.chunk_id() == chunk_id)
-                .collect::<Vec<&RiffChunk>>()),
+            RiffChunk::Container { subchunks, .. } => Ok(subchunks),
             RiffChunk::Normal { .. } => Err(RiffError::NormalChunkNoSubchunks),
         }
     }
