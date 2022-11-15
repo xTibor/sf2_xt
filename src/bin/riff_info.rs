@@ -7,7 +7,7 @@ use sf2lib::riff::{RawChunk, RawChunkIterator};
 pub fn print_riff_chunk(chunk: &RawChunk, chunk_level: usize) {
     match chunk {
         RawChunk::Container {
-            container_type,
+            chunk_type,
             chunk_id,
             chunk_data,
         } => {
@@ -15,7 +15,7 @@ pub fn print_riff_chunk(chunk: &RawChunk, chunk_level: usize) {
                 "{:chunk_level$}{} [{}] ({})",
                 "",
                 str::from_utf8(chunk_id).unwrap().escape_default(),
-                str::from_utf8(container_type).unwrap().escape_default(),
+                str::from_utf8(chunk_type).unwrap().escape_default(),
                 chunk_data.len()
             );
 
@@ -38,7 +38,7 @@ pub fn print_riff_chunk(chunk: &RawChunk, chunk_level: usize) {
 }
 
 fn main() {
-    let riff_path = env::args().skip(1).next().expect("No input file argument");
+    let riff_path = env::args().nth(1).expect("No input file argument");
     let riff_file = File::open(riff_path).expect("Failed to open input file");
 
     let riff_binary: &[u8] = unsafe {

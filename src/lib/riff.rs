@@ -1,6 +1,6 @@
 pub enum RawChunk<'a> {
     Container {
-        container_type: &'a [u8],
+        chunk_type: &'a [u8],
         chunk_id: &'a [u8],
         chunk_data: &'a [u8],
     },
@@ -45,14 +45,14 @@ impl<'a> Iterator for RawChunkIterator<'a> {
 
             if self.i + 8 + (chunk_size as usize) <= self.buffer.len() {
                 let chunk = if is_container {
-                    let container_type = chunk_id;
+                    let chunk_type = chunk_id;
                     let chunk_id = &self.buffer[self.i + 8..self.i + 12];
 
                     let chunk_data =
                         &self.buffer[self.i + 12..self.i + 12 + ((chunk_size as usize) - 4)];
 
                     Some(RawChunk::Container {
-                        container_type,
+                        chunk_type,
                         chunk_id,
                         chunk_data,
                     })
@@ -78,9 +78,11 @@ impl<'a> Iterator for RawChunkIterator<'a> {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 pub enum RiffChunk<'a> {
     Container {
-        container_type: &'a [u8],
+        chunk_type: &'a [u8],
         chunk_id: &'a [u8],
         subchunks: Vec<RiffChunk<'a>>,
     },
@@ -90,7 +92,40 @@ pub enum RiffChunk<'a> {
     },
 }
 
+impl<'a> From<RawChunk<'a>> for RiffChunk<'a> {
+    fn from(raw_chunk: RawChunk<'a>) -> Self {
+        match raw_chunk {
+            RawChunk::Container {
+                chunk_type,
+                chunk_id,
+                chunk_data,
+            } => {
+                let subchunks = RawChunkIterator::new(chunk_data)
+                    .map(RiffChunk::from)
+                    .collect::<Vec<_>>();
+
+                RiffChunk::Container {
+                    chunk_type,
+                    chunk_id,
+                    subchunks,
+                }
+            }
+            RawChunk::Normal {
+                chunk_id,
+                chunk_data,
+            } => RiffChunk::Normal {
+                chunk_id,
+                chunk_data,
+            },
+        }
+    }
+}
+
 impl<'a> RiffChunk<'a> {
+    pub fn new(buffer: &[u8]) -> RiffChunk {
+        RawChunkIterator::new(buffer).next().unwrap().into()
+    }
+
     pub fn chunk_id(&self) -> &'a [u8] {
         match self {
             RiffChunk::Container { chunk_id, .. } => chunk_id,
@@ -98,12 +133,23 @@ impl<'a> RiffChunk<'a> {
         }
     }
 
-    pub fn get_child(&self, chunk_id: &[u8]) -> Option<&RiffChunk<'a>> {
+    pub fn chunk_data(&self) -> &'a [u8] {
+        match self {
+            RiffChunk::Container { .. } => panic!("Container chunks have no data"),
+            RiffChunk::Normal { chunk_data, .. } => chunk_data,
+        }
+    }
+
+    pub fn subchunk(&self, chunk_id: &[u8]) -> Option<&RiffChunk<'a>> {
         match self {
             RiffChunk::Container { subchunks, .. } => subchunks
                 .iter()
                 .find(|subchunk| subchunk.chunk_id() == chunk_id),
             RiffChunk::Normal { .. } => None,
         }
+    }
+
+    pub fn is_container(&self) -> bool {
+        matches!(self, RiffChunk::Container { .. })
     }
 }
