@@ -42,13 +42,13 @@ fn main() {
     let riff_path = env::args().nth(1).expect("No input file argument");
     let riff_file = File::open(riff_path).expect("Failed to open input file");
 
-    let riff_binary: &[u8] = unsafe {
+    let riff_mmap: &[u8] = unsafe {
         &MmapOptions::new()
             .map(&riff_file)
             .expect("Failed to mmap input file")
     };
 
-    if let Ok(riff_root) = RiffChunk::new(riff_binary) {
+    if let Ok(riff_root) = RiffChunk::new(riff_mmap) {
         let _ = print_riff_chunk(&riff_root, 0);
     }
 }
