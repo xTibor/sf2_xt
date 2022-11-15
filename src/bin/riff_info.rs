@@ -19,7 +19,7 @@ pub fn print_riff_chunk(chunk: &RiffChunk, chunk_level: usize) -> RiffResult<()>
             );
 
             for chunk in subchunks {
-                print_riff_chunk(&chunk, chunk_level + 1)?;
+                print_riff_chunk(chunk, chunk_level + 1)?;
             }
         }
         RiffChunk::Normal {

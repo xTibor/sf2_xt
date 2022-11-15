@@ -14,6 +14,6 @@ fn main() {
             .expect("Failed to mmap input file")
     };
 
-    let riff_chunk = RiffChunk::new(&riff_binary);
+    let riff_chunk = RiffChunk::new(riff_binary);
     println!("{:#?}", riff_chunk);
 }

@@ -151,9 +151,12 @@ impl<'a> TryFrom<RawChunk<'a>> for RiffChunk<'a> {
 
     fn try_from(raw_chunk: RawChunk<'a>) -> RiffResult<Self> {
         fn from_fourcc(v: &[u8]) -> RiffResult<&str> {
-            // TODO: Better parser
-            if v.iter()
-                .all(|b| matches!(b, b'A'..=b'Z' | b'a'..=b'z' | b' '))
+            assert_eq!(v.len(), 4);
+            let (left, right) = v.split_at(v.partition_point(|&b| b.is_ascii_alphanumeric()));
+
+            if !left.is_empty()
+                && left.iter().all(|&b| b.is_ascii_alphanumeric())
+                && right.iter().all(|&b| b == b' ')
             {
                 Ok(unsafe { str::from_utf8_unchecked(v) })
             } else {
