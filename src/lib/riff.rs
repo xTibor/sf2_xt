@@ -1,7 +1,6 @@
 use std::error::Error;
 use std::fmt::{self, Debug};
-
-use crate::std_ext::str::{self, AsciiError};
+use std::str;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -11,8 +10,7 @@ pub enum RiffError {
     NormalChunkNoSubchunks,
     ContainerChunkNoData,
     TruncatedChunkData,
-    MalformedChunkId(AsciiError),
-    MalformedChunkType(AsciiError),
+    MalformedIdentifier,
 }
 
 pub type RiffResult<T> = Result<T, RiffError>;
@@ -24,8 +22,7 @@ impl Error for RiffError {
             RiffError::NormalChunkNoSubchunks => None,
             RiffError::ContainerChunkNoData => None,
             RiffError::TruncatedChunkData => None,
-            RiffError::MalformedChunkId(ref err) => Some(err),
-            RiffError::MalformedChunkType(ref err) => Some(err),
+            RiffError::MalformedIdentifier => None,
         }
     }
 }
@@ -37,8 +34,7 @@ impl fmt::Display for RiffError {
             RiffError::NormalChunkNoSubchunks => write!(f, "Normal chunks cannot have subchunks"),
             RiffError::ContainerChunkNoData => write!(f, "Container chunks cannot have data"),
             RiffError::TruncatedChunkData => write!(f, "Truncated chunk data"),
-            RiffError::MalformedChunkId(_) => write!(f, "Malformed chunk ID"),
-            RiffError::MalformedChunkType(_) => write!(f, "Malformed chunk type"),
+            RiffError::MalformedIdentifier => write!(f, "Malformed identifier"),
         }
     }
 }
@@ -154,6 +150,17 @@ impl<'a> TryFrom<RawChunk<'a>> for RiffChunk<'a> {
     type Error = RiffError;
 
     fn try_from(raw_chunk: RawChunk<'a>) -> RiffResult<Self> {
+        fn from_fourcc(v: &[u8]) -> RiffResult<&str> {
+            // TODO: Better parser
+            if v.iter()
+                .all(|b| matches!(b, b'A'..=b'Z' | b'a'..=b'z' | b' '))
+            {
+                Ok(unsafe { str::from_utf8_unchecked(v) })
+            } else {
+                Err(RiffError::MalformedIdentifier)
+            }
+        }
+
         match raw_chunk {
             RawChunk::Container {
                 chunk_type,
@@ -165,10 +172,8 @@ impl<'a> TryFrom<RawChunk<'a>> for RiffChunk<'a> {
                     .collect::<RiffResult<Vec<RiffChunk>>>()?;
 
                 Ok(RiffChunk::Container {
-                    chunk_type: str::from_ascii(chunk_type)
-                        .map_err(|err| RiffError::MalformedChunkType(err))?,
-                    chunk_id: str::from_ascii(chunk_id)
-                        .map_err(|err| RiffError::MalformedChunkId(err))?,
+                    chunk_type: from_fourcc(chunk_type)?,
+                    chunk_id: from_fourcc(chunk_id)?,
                     subchunks,
                 })
             }
@@ -176,8 +181,7 @@ impl<'a> TryFrom<RawChunk<'a>> for RiffChunk<'a> {
                 chunk_id,
                 chunk_data,
             } => Ok(RiffChunk::Normal {
-                chunk_id: str::from_ascii(chunk_id)
-                    .map_err(|err| RiffError::MalformedChunkId(err))?,
+                chunk_id: from_fourcc(chunk_id)?,
                 chunk_data,
             }),
         }
