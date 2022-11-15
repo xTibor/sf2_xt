@@ -44,7 +44,7 @@ impl fmt::Display for RiffError {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-pub enum RawChunk<'a> {
+enum RawChunk<'a> {
     Container {
         chunk_type: &'a [u8],
         chunk_id: &'a [u8],
@@ -56,24 +56,13 @@ pub enum RawChunk<'a> {
     },
 }
 
-impl<'a> RawChunk<'a> {
-    pub fn subchunks(&self) -> RiffResult<RawChunkIterator<'a>> {
-        match self {
-            RawChunk::Container { chunk_data, .. } => Ok(RawChunkIterator::new(chunk_data)),
-            RawChunk::Normal { .. } => Err(RiffError::NormalChunkNoSubchunks),
-        }
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-pub struct RawChunkIterator<'a> {
+struct RawChunkIterator<'a> {
     buffer: &'a [u8],
     i: usize,
 }
 
 impl<'a> RawChunkIterator<'a> {
-    pub fn new(buffer: &'a [u8]) -> Self {
+    fn new(buffer: &'a [u8]) -> Self {
         Self { buffer, i: 0 }
     }
 }
@@ -162,6 +151,7 @@ impl<'a> Debug for RiffChunk<'a> {
 
 impl<'a> TryFrom<RawChunk<'a>> for RiffChunk<'a> {
     type Error = RiffError;
+
     fn try_from(raw_chunk: RawChunk<'a>) -> RiffResult<Self> {
         match raw_chunk {
             RawChunk::Container {
@@ -216,12 +206,22 @@ impl<'a> RiffChunk<'a> {
         }
     }
 
-    pub fn subchunk(&self, chunk_id: &str) -> Option<&RiffChunk<'a>> {
+    pub fn subchunk(&self, chunk_id: &str) -> RiffResult<Option<&RiffChunk<'a>>> {
         match self {
-            RiffChunk::Container { subchunks, .. } => subchunks
+            RiffChunk::Container { subchunks, .. } => Ok(subchunks
                 .iter()
-                .find(|subchunk| subchunk.chunk_id() == chunk_id),
-            RiffChunk::Normal { .. } => None,
+                .find(|subchunk| subchunk.chunk_id() == chunk_id)),
+            RiffChunk::Normal { .. } => Err(RiffError::NormalChunkNoSubchunks),
+        }
+    }
+
+    pub fn subchunks(&self, chunk_id: &str) -> RiffResult<Vec<&RiffChunk<'a>>> {
+        match self {
+            RiffChunk::Container { subchunks, .. } => Ok(subchunks
+                .iter()
+                .filter(|subchunk| subchunk.chunk_id() == chunk_id)
+                .collect::<Vec<&RiffChunk>>()),
+            RiffChunk::Normal { .. } => Err(RiffError::NormalChunkNoSubchunks),
         }
     }
 

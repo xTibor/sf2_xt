@@ -1,36 +1,35 @@
+use std::env;
 use std::fs::File;
-use std::{env, str};
 
 use memmap::MmapOptions;
-use sf2lib::riff::{RawChunk, RawChunkIterator, RiffResult};
+use sf2lib::riff::{RiffChunk, RiffResult};
 
-pub fn print_riff_chunk(chunk: &RawChunk, chunk_level: usize) -> RiffResult<()> {
+pub fn print_riff_chunk(chunk: &RiffChunk, chunk_level: usize) -> RiffResult<()> {
     match chunk {
-        RawChunk::Container {
+        RiffChunk::Container {
             chunk_type,
             chunk_id,
-            chunk_data,
+            subchunks,
         } => {
             println!(
-                "{:chunk_level$}{} [{}] ({})",
+                "{:chunk_level$}{} [{}]",
                 "",
-                str::from_utf8(chunk_id).unwrap().escape_default(),
-                str::from_utf8(chunk_type).unwrap().escape_default(),
-                chunk_data.len()
+                chunk_id.escape_default(),
+                chunk_type.escape_default(),
             );
 
-            for chunk in chunk.subchunks()? {
-                print_riff_chunk(&chunk?, chunk_level + 1)?;
+            for chunk in subchunks {
+                print_riff_chunk(&chunk, chunk_level + 1)?;
             }
         }
-        RawChunk::Normal {
+        RiffChunk::Normal {
             chunk_id,
             chunk_data,
         } => {
             println!(
                 "{:chunk_level$}{} ({})",
                 "",
-                str::from_utf8(chunk_id).unwrap().escape_default(),
+                chunk_id.escape_default(),
                 chunk_data.len()
             );
         }
@@ -49,7 +48,7 @@ fn main() {
             .expect("Failed to mmap input file")
     };
 
-    if let Some(Ok(riff_root)) = RawChunkIterator::new(riff_binary).next() {
+    if let Ok(riff_root) = RiffChunk::new(riff_binary) {
         let _ = print_riff_chunk(&riff_root, 0);
     }
 }
