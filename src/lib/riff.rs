@@ -1,5 +1,48 @@
+use std::error::Error;
 use std::fmt::{self, Debug};
-use std::str;
+use std::str::{self, Utf8Error};
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[derive(Debug)]
+pub enum RiffError {
+    MissingChunk,
+    NormalChunkNoSubchunks,
+    ContainerChunkNoData,
+    TruncatedChunkData,
+    MalformedChunkId(Utf8Error),
+    MalformedChunkType(Utf8Error),
+}
+
+pub type RiffResult<T> = Result<T, RiffError>;
+
+impl Error for RiffError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            RiffError::MissingChunk => None,
+            RiffError::NormalChunkNoSubchunks => None,
+            RiffError::ContainerChunkNoData => None,
+            RiffError::TruncatedChunkData => None,
+            RiffError::MalformedChunkId(ref err) => Some(err),
+            RiffError::MalformedChunkType(ref err) => Some(err),
+        }
+    }
+}
+
+impl fmt::Display for RiffError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RiffError::MissingChunk => write!(f, "Missing chunk"),
+            RiffError::NormalChunkNoSubchunks => write!(f, "Normal chunks cannot have subchunks"),
+            RiffError::ContainerChunkNoData => write!(f, "Container chunks cannot have data"),
+            RiffError::TruncatedChunkData => write!(f, "Truncated chunk data"),
+            RiffError::MalformedChunkId(_) => write!(f, "Malformed chunk ID"),
+            RiffError::MalformedChunkType(_) => write!(f, "Malformed chunk type"),
+        }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 pub enum RawChunk<'a> {
     Container {
@@ -14,10 +57,10 @@ pub enum RawChunk<'a> {
 }
 
 impl<'a> RawChunk<'a> {
-    pub fn subchunks(&self) -> RawChunkIterator<'a> {
+    pub fn subchunks(&self) -> RiffResult<RawChunkIterator<'a>> {
         match self {
-            RawChunk::Container { chunk_data, .. } => RawChunkIterator::new(chunk_data),
-            RawChunk::Normal { .. } => panic!("Normal chunks cannot have subchunks"),
+            RawChunk::Container { chunk_data, .. } => Ok(RawChunkIterator::new(chunk_data)),
+            RawChunk::Normal { .. } => Err(RiffError::NormalChunkNoSubchunks),
         }
     }
 }
@@ -36,7 +79,7 @@ impl<'a> RawChunkIterator<'a> {
 }
 
 impl<'a> Iterator for RawChunkIterator<'a> {
-    type Item = RawChunk<'a>;
+    type Item = RiffResult<RawChunk<'a>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.i + 8 <= self.buffer.len() {
@@ -54,18 +97,18 @@ impl<'a> Iterator for RawChunkIterator<'a> {
                     let chunk_data =
                         &self.buffer[self.i + 12..self.i + 12 + ((chunk_size as usize) - 4)];
 
-                    Some(RawChunk::Container {
+                    Some(Ok(RawChunk::Container {
                         chunk_type,
                         chunk_id,
                         chunk_data,
-                    })
+                    }))
                 } else {
                     let chunk_data = &self.buffer[self.i + 8..self.i + 8 + (chunk_size as usize)];
 
-                    Some(RawChunk::Normal {
+                    Some(Ok(RawChunk::Normal {
                         chunk_id,
                         chunk_data,
-                    })
+                    }))
                 };
 
                 self.i = self.i + 8 + (chunk_size as usize);
@@ -73,7 +116,7 @@ impl<'a> Iterator for RawChunkIterator<'a> {
 
                 chunk
             } else {
-                None
+                Some(Err(RiffError::TruncatedChunkData))
             }
         } else {
             None
@@ -117,8 +160,9 @@ impl<'a> Debug for RiffChunk<'a> {
     }
 }
 
-impl<'a> From<RawChunk<'a>> for RiffChunk<'a> {
-    fn from(raw_chunk: RawChunk<'a>) -> Self {
+impl<'a> TryFrom<RawChunk<'a>> for RiffChunk<'a> {
+    type Error = RiffError;
+    fn try_from(raw_chunk: RawChunk<'a>) -> RiffResult<Self> {
         match raw_chunk {
             RawChunk::Container {
                 chunk_type,
@@ -126,29 +170,36 @@ impl<'a> From<RawChunk<'a>> for RiffChunk<'a> {
                 chunk_data,
             } => {
                 let subchunks = RawChunkIterator::new(chunk_data)
-                    .map(RiffChunk::from)
-                    .collect::<Vec<_>>();
+                    .map(|raw_chunk| RiffChunk::try_from(raw_chunk?))
+                    .collect::<RiffResult<Vec<RiffChunk>>>()?;
 
-                RiffChunk::Container {
-                    chunk_type: str::from_utf8(chunk_type).unwrap(),
-                    chunk_id: str::from_utf8(chunk_id).unwrap(),
+                Ok(RiffChunk::Container {
+                    chunk_type: str::from_utf8(chunk_type) // TODO: str::from_ascii()
+                        .map_err(|err| RiffError::MalformedChunkType(err))?,
+                    chunk_id: str::from_utf8(chunk_id) // TODO: str::from_ascii()
+                        .map_err(|err| RiffError::MalformedChunkId(err))?,
                     subchunks,
-                }
+                })
             }
             RawChunk::Normal {
                 chunk_id,
                 chunk_data,
-            } => RiffChunk::Normal {
-                chunk_id: str::from_utf8(chunk_id).unwrap(),
+            } => Ok(RiffChunk::Normal {
+                chunk_id: str::from_utf8(chunk_id) // TODO: str::from_ascii()
+                    .map_err(|err| RiffError::MalformedChunkId(err))?,
                 chunk_data,
-            },
+            }),
         }
     }
 }
 
 impl<'a> RiffChunk<'a> {
-    pub fn new(buffer: &[u8]) -> RiffChunk {
-        RawChunkIterator::new(buffer).next().unwrap().into()
+    pub fn new(buffer: &[u8]) -> RiffResult<RiffChunk> {
+        let raw_chunk = RawChunkIterator::new(buffer)
+            .next()
+            .transpose()?
+            .ok_or(RiffError::MissingChunk)?;
+        raw_chunk.try_into()
     }
 
     pub fn chunk_id(&self) -> &'a str {
@@ -158,10 +209,10 @@ impl<'a> RiffChunk<'a> {
         }
     }
 
-    pub fn chunk_data(&self) -> &'a [u8] {
+    pub fn chunk_data(&self) -> RiffResult<&'a [u8]> {
         match self {
-            RiffChunk::Container { .. } => panic!("Container chunks have no data"),
-            RiffChunk::Normal { chunk_data, .. } => chunk_data,
+            RiffChunk::Container { .. } => Err(RiffError::ContainerChunkNoData),
+            RiffChunk::Normal { chunk_data, .. } => Ok(chunk_data),
         }
     }
 

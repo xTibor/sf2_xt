@@ -2,9 +2,9 @@ use std::fs::File;
 use std::{env, str};
 
 use memmap::MmapOptions;
-use sf2lib::riff::{RawChunk, RawChunkIterator};
+use sf2lib::riff::{RawChunk, RawChunkIterator, RiffResult};
 
-pub fn print_riff_chunk(chunk: &RawChunk, chunk_level: usize) {
+pub fn print_riff_chunk(chunk: &RawChunk, chunk_level: usize) -> RiffResult<()> {
     match chunk {
         RawChunk::Container {
             chunk_type,
@@ -19,8 +19,8 @@ pub fn print_riff_chunk(chunk: &RawChunk, chunk_level: usize) {
                 chunk_data.len()
             );
 
-            for chunk in chunk.subchunks() {
-                print_riff_chunk(&chunk, chunk_level + 1);
+            for chunk in chunk.subchunks()? {
+                print_riff_chunk(&chunk?, chunk_level + 1)?;
             }
         }
         RawChunk::Normal {
@@ -35,6 +35,8 @@ pub fn print_riff_chunk(chunk: &RawChunk, chunk_level: usize) {
             );
         }
     }
+
+    Ok(())
 }
 
 fn main() {
@@ -47,7 +49,7 @@ fn main() {
             .expect("Failed to mmap input file")
     };
 
-    if let Some(riff_root) = RawChunkIterator::new(riff_binary).next() {
-        print_riff_chunk(&riff_root, 0);
+    if let Some(Ok(riff_root)) = RawChunkIterator::new(riff_binary).next() {
+        let _ = print_riff_chunk(&riff_root, 0);
     }
 }
