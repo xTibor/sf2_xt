@@ -4,6 +4,8 @@ use std::{env, str};
 
 use memmap::MmapOptions;
 use sf2lib::riff::RiffChunk;
+use sf2lib::sf2::Sf2PresetHeader;
+use zerocopy::FromBytes;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let sf2_path = env::args().nth(1).expect("No input file argument");
@@ -20,6 +22,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         for chunk in info.subchunks()? {
             let data = str::from_utf8(chunk.chunk_data()?)?;
             println!("{}: {}", chunk.chunk_id(), data);
+        }
+    }
+
+    if let Some(pdta) = sfbk.subchunk("pdta")? {
+        if let Some(phdr) = pdta.subchunk("phdr")? {
+            println!("{}", phdr.chunk_data()?.len());
+
+            let preset_header = Sf2PresetHeader::read_from_prefix(phdr.chunk_data()?);
+            println!("{:?}", preset_header);
         }
     }
 

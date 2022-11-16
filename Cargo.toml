@@ -17,3 +17,4 @@ path = "src/bin/sf2_info.rs"
 
 [dependencies]
 memmap = "0.7.0"
+zerocopy = "0.6.1"
