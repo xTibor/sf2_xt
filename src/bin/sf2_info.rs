@@ -29,8 +29,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         if let Some(phdr) = pdta.subchunk("phdr")? {
             println!("{}", phdr.chunk_data()?.len());
 
-            let preset_header = Sf2PresetHeader::read_from_prefix(phdr.chunk_data()?);
-            println!("{:?}", preset_header);
+            for preset_header_bin in phdr
+                .chunk_data()?
+                .chunks_exact(std::mem::size_of::<Sf2PresetHeader>())
+            {
+                let preset_header = Sf2PresetHeader::read_from_prefix(preset_header_bin).unwrap();
+                //println!("{:?}", preset_header);
+                println!(
+                    "[{:3}:{:3}] {}",
+                    preset_header.bank,
+                    preset_header.preset,
+                    str::from_utf8(&preset_header.preset_name).unwrap()
+                )
+            }
         }
     }
 

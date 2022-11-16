@@ -1,5 +1,4 @@
-use zerocopy::{LittleEndian as LE, U16, U32, FromBytes, AsBytes, Unaligned};
-
+use zerocopy::{AsBytes, FromBytes, LittleEndian as LE, Unaligned, U16, U32};
 
 #[derive(Debug, FromBytes, AsBytes, Unaligned)]
 #[repr(packed)]
