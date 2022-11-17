@@ -53,5 +53,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         )
     }
 
+    for sample in sf2_soundfont.samples()? {
+        println!("{}", sample.sample_name()?,)
+    }
+
     Ok(())
 }

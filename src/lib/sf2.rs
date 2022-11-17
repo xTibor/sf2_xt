@@ -4,7 +4,6 @@ use std::marker::PhantomData;
 use std::slice::ChunksExact;
 use std::{fmt, mem, str};
 
-use itertools::Itertools;
 use zerocopy::{FromBytes, LittleEndian as LE, Unaligned, U16, U32};
 
 use crate::riff::{RiffChunk, RiffError};
@@ -78,14 +77,18 @@ pub trait IsTerminalRecord {
     fn is_terminal_record(&self) -> bool;
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-pub struct Sf2RecordIterator<'a, T> {
+pub struct Sf2RecordIterator<'a, T>
+where
+    T: FromBytes + IsTerminalRecord,
+{
     iter: ChunksExact<'a, u8>,
     phantom: PhantomData<T>,
 }
 
-impl<'a, T> Sf2RecordIterator<'a, T> {
+impl<'a, T> Sf2RecordIterator<'a, T>
+where
+    T: FromBytes + IsTerminalRecord,
+{
     fn new(buffer: &'a [u8]) -> Self {
         let iter = buffer.chunks_exact(mem::size_of::<T>());
         Self {
@@ -248,7 +251,7 @@ impl<'a> Sf2Info<'a> {
 
     pub fn soundfont_tools(&self) -> Sf2Result<Option<Vec<&'a str>>> {
         self.read_zstr_chunk_opt("ISFT")
-            .map(|opt| opt.map(|s| s.split(':').filter(|s| !s.is_empty()).collect_vec()))
+            .map(|opt| opt.map(|s| s.split(':').filter(|s| !s.is_empty()).collect::<Vec<_>>()))
     }
 }
 
@@ -270,6 +273,35 @@ impl Sf2Instrument {
 impl IsTerminalRecord for Sf2Instrument {
     fn is_terminal_record(&self) -> bool {
         self.instrument_name.starts_with(b"EOI\0")
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[derive(Debug, FromBytes, Unaligned)]
+#[repr(packed)]
+pub struct Sf2Sample {
+    pub sample_name: [u8; 20],
+    pub start: U32<LE>,
+    pub end: U32<LE>,
+    pub start_loop: U32<LE>,
+    pub end_loop: U32<LE>,
+    pub sample_rate: U32<LE>,
+    pub original_pitch: u8,
+    pub pitch_correction: i8,
+    pub sample_link: U16<LE>,
+    pub sample_type: U16<LE>, //TODO: SFSampleLink sfSampleType;
+}
+
+impl Sf2Sample {
+    pub fn sample_name(&self) -> Sf2Result<&str> {
+        str_from_fixedstr(&self.sample_name)
+    }
+}
+
+impl IsTerminalRecord for Sf2Sample {
+    fn is_terminal_record(&self) -> bool {
+        self.sample_name.starts_with(b"EOS\0")
     }
 }
 
@@ -314,6 +346,19 @@ impl<'a> Sf2Soundfont<'a> {
             .ok_or(Sf2Error::MissingChunk("inst"))?;
 
         Ok(Sf2RecordIterator::new(chunk_inst.chunk_data()?))
+    }
+
+    pub fn samples(&self) -> Sf2Result<Sf2RecordIterator<Sf2Sample>> {
+        let chunk_pdta = self
+            .chunk_sfbk
+            .subchunk("pdta")?
+            .ok_or(Sf2Error::MissingChunk("pdta"))?;
+
+        let chunk_shdr = chunk_pdta
+            .subchunk("shdr")?
+            .ok_or(Sf2Error::MissingChunk("shdr"))?;
+
+        Ok(Sf2RecordIterator::new(chunk_shdr.chunk_data()?))
     }
 
     pub fn info(&self) -> Sf2Result<Sf2Info> {
