@@ -3,6 +3,7 @@ use std::ffi::CStr;
 use std::slice::ChunksExact;
 use std::{fmt, mem};
 
+use itertools::Itertools;
 use zerocopy::{FromBytes, LittleEndian as LE, Unaligned, U16, U32};
 
 use crate::riff::{RiffChunk, RiffError};
@@ -181,9 +182,9 @@ impl<'a> Sf2Info<'a> {
         self.read_zstr_opt("ICMT")
     }
 
-    pub fn soundfont_tools(&self) -> Sf2Result<Option<&'a str>> {
-        // TODO: split
+    pub fn soundfont_tools(&self) -> Sf2Result<Option<Vec<&'a str>>> {
         self.read_zstr_opt("ISFT")
+            .map(|opt| opt.map(|s| s.split(':').filter(|s| !s.is_empty()).collect_vec()))
     }
 }
 

@@ -30,7 +30,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("{:?}", sf2_info.comment()?);
     println!("{:?}", sf2_info.soundfont_tools()?);
 
-
     for preset_header in sf2_soundfont
         .preset_headers()?
         .sorted_by_key(Sf2PresetHeader::bank_preset)
