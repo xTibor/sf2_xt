@@ -4,7 +4,8 @@ use std::fs::File;
 
 use itertools::Itertools;
 use memmap::MmapOptions;
-use sf2lib::sf2::Sf2Soundfont;
+use sf2lib::gm;
+use sf2lib::sf2::{Sf2PresetHeader, Sf2Soundfont};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let sf2_path = env::args().nth(1).expect("No input file argument");
@@ -20,12 +21,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     for preset_header in sf2_soundfont
         .preset_headers()?
-        .sorted_by_key(|preset_header| (preset_header.bank.get(), preset_header.preset.get()))
+        .sorted_by_key(Sf2PresetHeader::bank_preset)
     {
+        let gm_name = gm::GENERAL_MIDI
+            .binary_search_by_key(&preset_header.bank_preset(), |&(bank_preset, _)| {
+                bank_preset
+            });
+
         println!(
             "[{:3}:{:3}] {}",
-            preset_header.bank,
-            preset_header.preset,
+            preset_header.bank(),
+            preset_header.preset(),
             preset_header.preset_name()?,
         )
     }

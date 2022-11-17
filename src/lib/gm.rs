@@ -1,7 +1,7 @@
 // https://www.midi.org/specifications-old/item/gm-level-1-sound-set
 
 #[rustfmt::skip]
-const GENERAL_MIDI: &[((u16, u16), &str)] = &[
+pub const GENERAL_MIDI: &[((u16, u16), &str)] = &[
     ((  0,   0), "Acoustic Grand Piano"   ),
     ((  0,   1), "Bright Acoustic Piano"  ),
     ((  0,   2), "Electric Grand Piano"   ),

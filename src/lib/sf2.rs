@@ -64,10 +64,22 @@ pub struct Sf2PresetHeader {
 impl Sf2PresetHeader {
     pub fn preset_name(&self) -> Sf2Result<&str> {
         // preset_name may contain garbage after the zero-terminator (GeneralUser GS)
-        Ok(CStr::from_bytes_until_nul(&self.preset_name)
+        CStr::from_bytes_until_nul(&self.preset_name)
             .map_err(|_| Sf2Error::MalformedPresetName)?
             .to_str()
-            .map_err(|_| Sf2Error::MalformedPresetName)?)
+            .map_err(|_| Sf2Error::MalformedPresetName)
+    }
+
+    pub fn bank_preset(&self) -> (u16, u16) {
+        (self.bank.get(), self.preset.get())
+    }
+
+    pub fn bank(&self) -> u16 {
+        self.bank.get()
+    }
+
+    pub fn preset(&self) -> u16 {
+        self.preset.get()
     }
 }
 
