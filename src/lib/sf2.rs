@@ -74,6 +74,50 @@ fn str_from_fixedstr<'a>(data: &'a [u8]) -> Sf2Result<&'a str> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+pub trait IsTerminalRecord {
+    fn is_terminal_record(&self) -> bool;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+pub struct Sf2RecordIterator<'a, T> {
+    iter: ChunksExact<'a, u8>,
+    phantom: PhantomData<T>,
+}
+
+impl<'a, T> Sf2RecordIterator<'a, T> {
+    fn new(buffer: &'a [u8]) -> Self {
+        let iter = buffer.chunks_exact(mem::size_of::<T>());
+        Self {
+            iter,
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, T> Iterator for Sf2RecordIterator<'a, T>
+where
+    T: FromBytes + IsTerminalRecord,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(raw_bytes) = self.iter.next() {
+            let record = T::read_from(raw_bytes).unwrap();
+
+            if record.is_terminal_record() {
+                None
+            } else {
+                Some(record)
+            }
+        } else {
+            None
+        }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 #[derive(Debug, FromBytes, Unaligned)]
 #[repr(packed)]
 pub struct Sf2Version {
@@ -113,32 +157,9 @@ impl Sf2PresetHeader {
     }
 }
 
-pub struct Sf2PresetHeaderIterator<'a> {
-    iter: ChunksExact<'a, u8>,
-}
-
-impl<'a> Sf2PresetHeaderIterator<'a> {
-    fn new(buffer: &'a [u8]) -> Self {
-        let iter = buffer.chunks_exact(mem::size_of::<Sf2PresetHeader>());
-        Self { iter }
-    }
-}
-
-impl<'a> Iterator for Sf2PresetHeaderIterator<'a> {
-    type Item = Sf2PresetHeader;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(preset_header_raw) = self.iter.next() {
-            let preset_header = Sf2PresetHeader::read_from(preset_header_raw).unwrap();
-
-            if preset_header.preset_name.starts_with(b"EOP\0") {
-                None
-            } else {
-                Some(preset_header)
-            }
-        } else {
-            None
-        }
+impl IsTerminalRecord for Sf2PresetHeader {
+    fn is_terminal_record(&self) -> bool {
+        self.preset_name.starts_with(b"EOP\0")
     }
 }
 
@@ -246,32 +267,9 @@ impl Sf2Instrument {
     }
 }
 
-pub struct Sf2InstrumentIterator<'a> {
-    iter: ChunksExact<'a, u8>,
-}
-
-impl<'a> Sf2InstrumentIterator<'a> {
-    fn new(buffer: &'a [u8]) -> Self {
-        let iter = buffer.chunks_exact(mem::size_of::<Sf2Instrument>());
-        Self { iter }
-    }
-}
-
-impl<'a> Iterator for Sf2InstrumentIterator<'a> {
-    type Item = Sf2Instrument;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(instrument_raw) = self.iter.next() {
-            let instrument = Sf2Instrument::read_from(instrument_raw).unwrap();
-
-            if instrument.instrument_name.starts_with(b"EOI\0") {
-                None
-            } else {
-                Some(instrument)
-            }
-        } else {
-            None
-        }
+impl IsTerminalRecord for Sf2Instrument {
+    fn is_terminal_record(&self) -> bool {
+        self.instrument_name.starts_with(b"EOI\0")
     }
 }
 
@@ -292,7 +290,7 @@ impl<'a> Sf2Soundfont<'a> {
         Ok(Sf2Soundfont { chunk_sfbk })
     }
 
-    pub fn preset_headers(&self) -> Sf2Result<Sf2PresetHeaderIterator> {
+    pub fn preset_headers(&self) -> Sf2Result<Sf2RecordIterator<Sf2PresetHeader>> {
         let chunk_pdta = self
             .chunk_sfbk
             .subchunk("pdta")?
@@ -302,10 +300,10 @@ impl<'a> Sf2Soundfont<'a> {
             .subchunk("phdr")?
             .ok_or(Sf2Error::MissingChunk("phdr"))?;
 
-        Ok(Sf2PresetHeaderIterator::new(chunk_phdr.chunk_data()?))
+        Ok(Sf2RecordIterator::new(chunk_phdr.chunk_data()?))
     }
 
-    pub fn instruments(&self) -> Sf2Result<Sf2InstrumentIterator> {
+    pub fn instruments(&self) -> Sf2Result<Sf2RecordIterator<Sf2Instrument>> {
         let chunk_pdta = self
             .chunk_sfbk
             .subchunk("pdta")?
@@ -315,7 +313,7 @@ impl<'a> Sf2Soundfont<'a> {
             .subchunk("inst")?
             .ok_or(Sf2Error::MissingChunk("inst"))?;
 
-        Ok(Sf2InstrumentIterator::new(chunk_inst.chunk_data()?))
+        Ok(Sf2RecordIterator::new(chunk_inst.chunk_data()?))
     }
 
     pub fn info(&self) -> Sf2Result<Sf2Info> {
