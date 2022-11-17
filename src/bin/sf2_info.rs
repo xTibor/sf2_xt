@@ -18,6 +18,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let sf2_soundfont = Sf2Soundfont::new(sf2_mmap)?;
 
+    let sf2_info = sf2_soundfont.info()?;
+
+    println!("{}", sf2_info.sound_engine()?);
+    println!("{}", sf2_info.soundfont_name()?);
+    println!("{:?}", sf2_info.rom_name()?);
+    println!("{:?}", sf2_info.date()?);
+    println!("{:?}", sf2_info.author()?);
+    println!("{:?}", sf2_info.product()?);
+    println!("{:?}", sf2_info.copyright()?);
+    println!("{:?}", sf2_info.comment()?);
+    println!("{:?}", sf2_info.soundfont_tools()?);
+
+
     for preset_header in sf2_soundfont
         .preset_headers()?
         .sorted_by_key(Sf2PresetHeader::bank_preset)

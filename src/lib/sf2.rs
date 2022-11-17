@@ -15,6 +15,7 @@ pub enum Sf2Error {
     InvalidRootChunk,
     MissingChunk(&'static str),
     MalformedPresetName,
+    MalformedInfoString,
 }
 
 pub type Sf2Result<T> = Result<T, Sf2Error>;
@@ -26,6 +27,7 @@ impl Error for Sf2Error {
             Sf2Error::InvalidRootChunk => None,
             Sf2Error::MissingChunk(_) => None,
             Sf2Error::MalformedPresetName => None,
+            Sf2Error::MalformedInfoString => None,
         }
     }
 }
@@ -37,6 +39,7 @@ impl fmt::Display for Sf2Error {
             Sf2Error::InvalidRootChunk => write!(f, "Invalid root chunk"),
             Sf2Error::MissingChunk(chunk_id) => write!(f, "Missing '{}' chunk", chunk_id),
             Sf2Error::MalformedPresetName => write!(f, "Malformed preset name"),
+            Sf2Error::MalformedInfoString => write!(f, "Malformed info string"),
         }
     }
 }
@@ -114,6 +117,78 @@ impl<'a> Iterator for Sf2PresetHeaderIterator<'a> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+pub struct Sf2Info<'a> {
+    chunk_info: &'a RiffChunk<'a>,
+}
+
+impl<'a> Sf2Info<'a> {
+    pub fn new(chunk_info: &'a RiffChunk<'a>) -> Sf2Result<Sf2Info<'a>> {
+        Ok(Sf2Info { chunk_info })
+    }
+
+    fn read_zstr_opt(&self, chunk_id: &'static str) -> Sf2Result<Option<&'a str>> {
+        if let Some(chunk) = self.chunk_info.subchunk(chunk_id)? {
+            Ok(Some(
+                CStr::from_bytes_until_nul(chunk.chunk_data()?)
+                    .map_err(|_| Sf2Error::MalformedInfoString)?
+                    .to_str()
+                    .map_err(|_| Sf2Error::MalformedInfoString)?,
+            ))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn read_zstr(&self, chunk_id: &'static str) -> Sf2Result<&'a str> {
+        self.read_zstr_opt(chunk_id)
+            .transpose()
+            .ok_or(Sf2Error::MissingChunk(chunk_id))?
+    }
+
+    // ifil
+
+    pub fn sound_engine(&self) -> Sf2Result<&'a str> {
+        self.read_zstr("isng")
+    }
+
+    pub fn soundfont_name(&self) -> Sf2Result<&'a str> {
+        self.read_zstr("INAM")
+    }
+
+    pub fn rom_name(&self) -> Sf2Result<Option<&'a str>> {
+        self.read_zstr_opt("irom")
+    }
+
+    // iver
+
+    pub fn date(&self) -> Sf2Result<Option<&'a str>> {
+        self.read_zstr_opt("ICRD")
+    }
+
+    pub fn author(&self) -> Sf2Result<Option<&'a str>> {
+        self.read_zstr_opt("IENG")
+    }
+
+    pub fn product(&self) -> Sf2Result<Option<&'a str>> {
+        self.read_zstr_opt("IPRD")
+    }
+
+    pub fn copyright(&self) -> Sf2Result<Option<&'a str>> {
+        self.read_zstr_opt("ICOP")
+    }
+
+    pub fn comment(&self) -> Sf2Result<Option<&'a str>> {
+        self.read_zstr_opt("ICMT")
+    }
+
+    pub fn soundfont_tools(&self) -> Sf2Result<Option<&'a str>> {
+        // TODO: split
+        self.read_zstr_opt("ISFT")
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 pub struct Sf2Soundfont<'a> {
     chunk_sfbk: RiffChunk<'a>,
 }
@@ -140,5 +215,14 @@ impl<'a> Sf2Soundfont<'a> {
             .ok_or(Sf2Error::MissingChunk("phdr"))?;
 
         Ok(Sf2PresetHeaderIterator::new(chunk_phdr.chunk_data()?))
+    }
+
+    pub fn info(&self) -> Sf2Result<Sf2Info> {
+        let chunk_info = self
+            .chunk_sfbk
+            .subchunk("INFO")?
+            .ok_or(Sf2Error::MissingChunk("INFO"))?;
+
+        Sf2Info::new(chunk_info)
     }
 }
