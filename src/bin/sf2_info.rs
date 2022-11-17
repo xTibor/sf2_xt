@@ -45,5 +45,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         )
     }
 
+    for instrument in sf2_soundfont.instruments()? {
+        println!(
+            "{:5} {}",
+            instrument.instrument_bag_index,
+            instrument.instrument_name()?,
+        )
+    }
+
     Ok(())
 }

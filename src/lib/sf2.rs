@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::ffi::CStr;
+use std::marker::PhantomData;
 use std::slice::ChunksExact;
 use std::{fmt, mem, str};
 
@@ -232,6 +233,50 @@ impl<'a> Sf2Info<'a> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+#[derive(Debug, FromBytes, Unaligned)]
+#[repr(packed)]
+pub struct Sf2Instrument {
+    pub instrument_name: [u8; 20],
+    pub instrument_bag_index: U16<LE>,
+}
+
+impl Sf2Instrument {
+    pub fn instrument_name(&self) -> Sf2Result<&str> {
+        str_from_fixedstr(&self.instrument_name)
+    }
+}
+
+pub struct Sf2InstrumentIterator<'a> {
+    iter: ChunksExact<'a, u8>,
+}
+
+impl<'a> Sf2InstrumentIterator<'a> {
+    fn new(buffer: &'a [u8]) -> Self {
+        let iter = buffer.chunks_exact(mem::size_of::<Sf2Instrument>());
+        Self { iter }
+    }
+}
+
+impl<'a> Iterator for Sf2InstrumentIterator<'a> {
+    type Item = Sf2Instrument;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(instrument_raw) = self.iter.next() {
+            let instrument = Sf2Instrument::read_from(instrument_raw).unwrap();
+
+            if instrument.instrument_name.starts_with(b"EOI\0") {
+                None
+            } else {
+                Some(instrument)
+            }
+        } else {
+            None
+        }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 pub struct Sf2Soundfont<'a> {
     chunk_sfbk: RiffChunk<'a>,
 }
@@ -258,6 +303,19 @@ impl<'a> Sf2Soundfont<'a> {
             .ok_or(Sf2Error::MissingChunk("phdr"))?;
 
         Ok(Sf2PresetHeaderIterator::new(chunk_phdr.chunk_data()?))
+    }
+
+    pub fn instruments(&self) -> Sf2Result<Sf2InstrumentIterator> {
+        let chunk_pdta = self
+            .chunk_sfbk
+            .subchunk("pdta")?
+            .ok_or(Sf2Error::MissingChunk("pdta"))?;
+
+        let chunk_inst = chunk_pdta
+            .subchunk("inst")?
+            .ok_or(Sf2Error::MissingChunk("inst"))?;
+
+        Ok(Sf2InstrumentIterator::new(chunk_inst.chunk_data()?))
     }
 
     pub fn info(&self) -> Sf2Result<Sf2Info> {
