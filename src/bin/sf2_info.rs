@@ -2,6 +2,7 @@ use std::error::Error;
 use std::fs::File;
 use std::{env, str};
 
+use itertools::Itertools;
 use memmap::MmapOptions;
 use sf2lib::sf2::Sf2Soundfont;
 
@@ -17,7 +18,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let sf2_soundfont = Sf2Soundfont::new(sf2_mmap)?;
 
-    for preset_header in sf2_soundfont.preset_headers()? {
+    for preset_header in sf2_soundfont
+        .preset_headers()?
+        .sorted_by_key(|preset_header| (preset_header.bank.get(), preset_header.preset.get()))
+    {
         println!(
             "[{:3}:{:3}] {}",
             preset_header.bank,
