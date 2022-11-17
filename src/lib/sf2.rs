@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::ffi::CStr;
 use std::slice::ChunksExact;
 use std::{fmt, mem};
 
@@ -13,6 +14,7 @@ pub enum Sf2Error {
     RiffError(RiffError),
     InvalidRootChunk,
     MissingChunk(&'static str),
+    MalformedPresetName,
 }
 
 pub type Sf2Result<T> = Result<T, Sf2Error>;
@@ -23,6 +25,7 @@ impl Error for Sf2Error {
             Sf2Error::RiffError(err) => Some(err),
             Sf2Error::InvalidRootChunk => None,
             Sf2Error::MissingChunk(_) => None,
+            Sf2Error::MalformedPresetName => None,
         }
     }
 }
@@ -33,6 +36,7 @@ impl fmt::Display for Sf2Error {
             Sf2Error::RiffError(_) => write!(f, "RIFF error"),
             Sf2Error::InvalidRootChunk => write!(f, "Invalid root chunk"),
             Sf2Error::MissingChunk(chunk_id) => write!(f, "Missing '{}' chunk", chunk_id),
+            Sf2Error::MalformedPresetName => write!(f, "Malformed preset name"),
         }
     }
 }
@@ -55,6 +59,16 @@ pub struct Sf2PresetHeader {
     pub library: U32<LE>,
     pub genre: U32<LE>,
     pub morphology: U32<LE>,
+}
+
+impl Sf2PresetHeader {
+    pub fn preset_name(&self) -> Sf2Result<&str> {
+        // preset_name may contain garbage after the zero-terminator (GeneralUser GS)
+        Ok(CStr::from_bytes_until_nul(&self.preset_name)
+            .map_err(|_| Sf2Error::MalformedPresetName)?
+            .to_str()
+            .map_err(|_| Sf2Error::MalformedPresetName)?)
+    }
 }
 
 pub struct Sf2PresetHeaderIterator<'a> {

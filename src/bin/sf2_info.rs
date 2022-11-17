@@ -1,8 +1,5 @@
-#![feature(cstr_from_bytes_until_nul)]
-
 use std::env;
 use std::error::Error;
-use std::ffi::CStr;
 use std::fs::File;
 
 use itertools::Itertools;
@@ -29,8 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             "[{:3}:{:3}] {}",
             preset_header.bank,
             preset_header.preset,
-            // preset_name may contain garbage after the zero-terminator (GeneralUser GS)
-            CStr::from_bytes_until_nul(&preset_header.preset_name)?.to_str()?,
+            preset_header.preset_name()?,
         )
     }
 
