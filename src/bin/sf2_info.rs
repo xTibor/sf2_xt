@@ -20,6 +20,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let sf2_info = sf2_soundfont.info()?;
 
+    println!("{:?}", sf2_info.format_version()?);
+    println!("{:?}", sf2_info.rom_version()?);
+
     println!("{}", sf2_info.sound_engine()?);
     println!("{}", sf2_info.soundfont_name()?);
     println!("{:?}", sf2_info.rom_name()?);
