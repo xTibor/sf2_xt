@@ -9,39 +9,35 @@ use crate::riff::{RiffChunk, RiffError};
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[derive(Debug)]
-pub enum Sf2Error<'a> {
+pub enum Sf2Error {
     RiffError(RiffError),
-    InvalidRootChunk { found: &'a str, expected: &'a str },
-    MissingChunk(&'a str),
+    InvalidRootChunk,
+    MissingChunk(&'static str),
 }
 
-pub type Sf2Result<'a, T> = Result<T, Sf2Error<'a>>;
+pub type Sf2Result<T> = Result<T, Sf2Error>;
 
-impl<'a> Error for Sf2Error<'a> {
+impl Error for Sf2Error {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Sf2Error::RiffError(err) => Some(err),
-            Sf2Error::InvalidRootChunk { .. } => None,
+            Sf2Error::InvalidRootChunk => None,
             Sf2Error::MissingChunk(_) => None,
         }
     }
 }
 
-impl<'a> fmt::Display for Sf2Error<'a> {
+impl fmt::Display for Sf2Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Sf2Error::RiffError(_) => write!(f, "RIFF error"),
-            Sf2Error::InvalidRootChunk { found, expected } => write!(
-                f,
-                "Invalid root chunk (found: '{}', expected '{}')",
-                found, expected
-            ),
+            Sf2Error::InvalidRootChunk => write!(f, "Invalid root chunk"),
             Sf2Error::MissingChunk(chunk_id) => write!(f, "Missing '{}' chunk", chunk_id),
         }
     }
 }
 
-impl<'a> From<RiffError> for Sf2Error<'a> {
+impl From<RiffError> for Sf2Error {
     fn from(err: RiffError) -> Self {
         Sf2Error::RiffError(err)
     }
@@ -78,8 +74,12 @@ impl<'a> Iterator for Sf2PresetHeaderIterator<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(preset_header_raw) = self.iter.next() {
             let preset_header = Sf2PresetHeader::read_from_prefix(preset_header_raw).unwrap();
-            // TODO: EOP
-            Some(preset_header)
+
+            if preset_header.preset_name.starts_with(b"EOP\0") {
+                None
+            } else {
+                Some(preset_header)
+            }
         } else {
             None
         }
@@ -97,10 +97,7 @@ impl<'a> Sf2Soundfont<'a> {
         let chunk_sfbk = RiffChunk::new(buffer)?;
 
         if chunk_sfbk.chunk_id() != "sfbk" {
-            return Err(Sf2Error::InvalidRootChunk {
-                found: chunk_sfbk.chunk_id(),
-                expected: "sfbk",
-            });
+            return Err(Sf2Error::InvalidRootChunk);
         }
 
         Ok(Sf2Soundfont { chunk_sfbk })
