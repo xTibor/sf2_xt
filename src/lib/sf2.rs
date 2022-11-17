@@ -75,6 +75,15 @@ fn str_from_fixedstr<'a>(data: &'a [u8]) -> Sf2Result<&'a str> {
 
 #[derive(Debug, FromBytes, Unaligned)]
 #[repr(packed)]
+pub struct Sf2Version {
+    pub major: U16<LE>,
+    pub minor: U16<LE>,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[derive(Debug, FromBytes, Unaligned)]
+#[repr(packed)]
 pub struct Sf2PresetHeader {
     pub preset_name: [u8; 20],
     pub preset: U16<LE>,
@@ -119,7 +128,7 @@ impl<'a> Iterator for Sf2PresetHeaderIterator<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(preset_header_raw) = self.iter.next() {
-            let preset_header = Sf2PresetHeader::read_from_prefix(preset_header_raw).unwrap();
+            let preset_header = Sf2PresetHeader::read_from(preset_header_raw).unwrap();
 
             if preset_header.preset_name.starts_with(b"EOP\0") {
                 None
@@ -153,12 +162,8 @@ impl<'a> Sf2Info<'a> {
 
     fn read_ver_chunk_opt(&self, chunk_id: &'static str) -> Sf2Result<Option<(u16, u16)>> {
         if let Some(chunk) = self.chunk_info.subchunk(chunk_id)? {
-            let chunk_data = chunk.chunk_data()?;
-
-            if chunk_data.len() == 4 {
-                let major = u16::from_le_bytes(chunk_data[0..2].try_into().unwrap());
-                let minor = u16::from_le_bytes(chunk_data[2..4].try_into().unwrap());
-                Ok(Some((major, minor)))
+            if let Some(Sf2Version { major, minor }) = Sf2Version::read_from(chunk.chunk_data()?) {
+                Ok(Some((major.get(), minor.get())))
             } else {
                 Err(Sf2Error::MalformedVersionChunk)
             }
@@ -168,11 +173,15 @@ impl<'a> Sf2Info<'a> {
     }
 
     fn read_zstr_chunk(&self, chunk_id: &'static str) -> Sf2Result<&'a str> {
-        self.read_zstr_chunk_opt(chunk_id).transpose().ok_or(Sf2Error::MissingChunk(chunk_id))?
+        self.read_zstr_chunk_opt(chunk_id)
+            .transpose()
+            .ok_or(Sf2Error::MissingChunk(chunk_id))?
     }
 
     fn read_ver_chunk(&self, chunk_id: &'static str) -> Sf2Result<(u16, u16)> {
-        self.read_ver_chunk_opt(chunk_id).transpose().ok_or(Sf2Error::MissingChunk(chunk_id))?
+        self.read_ver_chunk_opt(chunk_id)
+            .transpose()
+            .ok_or(Sf2Error::MissingChunk(chunk_id))?
     }
 
     pub fn format_version(&self) -> Sf2Result<(u16, u16)> {
