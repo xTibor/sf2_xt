@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::ffi::CStr;
 use std::slice::ChunksExact;
-use std::{fmt, mem};
+use std::{fmt, mem, str};
 
 use itertools::Itertools;
 use zerocopy::{FromBytes, LittleEndian as LE, Unaligned, U16, U32};
@@ -67,11 +67,17 @@ pub struct Sf2PresetHeader {
 
 impl Sf2PresetHeader {
     pub fn preset_name(&self) -> Sf2Result<&str> {
-        // preset_name may contain garbage after the zero-terminator (GeneralUser GS)
-        CStr::from_bytes_until_nul(&self.preset_name)
-            .map_err(|_| Sf2Error::MalformedPresetName)?
-            .to_str()
-            .map_err(|_| Sf2Error::MalformedPresetName)
+        // Preset names may contain garbage after the zero-terminator that may
+        // cause issues with the string conversion. (GeneralUser GS)
+        let preset_name_end = self
+            .preset_name
+            .iter()
+            .position(|&b| b == b'\0')
+            .unwrap_or(self.preset_name.len());
+
+        let preset_name_trimmed = &self.preset_name[..preset_name_end];
+
+        str::from_utf8(preset_name_trimmed).map_err(|_| Sf2Error::MalformedPresetName)
     }
 
     pub fn bank_preset(&self) -> (u16, u16) {
