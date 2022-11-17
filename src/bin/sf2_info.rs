@@ -4,7 +4,7 @@ use std::{env, str};
 
 use memmap::MmapOptions;
 use sf2lib::riff::RiffChunk;
-use sf2lib::sf2::Sf2PresetHeader;
+use sf2lib::sf2::{Sf2PresetHeader, Sf2Soundfont};
 use zerocopy::FromBytes;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -17,6 +17,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             .expect("Failed to mmap input file")
     };
 
+    let sf2 = Sf2Soundfont::new(sf2_mmap)?;
+
+
+
+    /*
     let sfbk = RiffChunk::new(sf2_mmap)?;
     if let Some(info) = sfbk.subchunk("INFO")? {
         for chunk in info.subchunks()? {
@@ -44,6 +49,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
     }
+    */
 
     Ok(())
 }

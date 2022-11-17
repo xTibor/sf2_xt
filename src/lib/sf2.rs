@@ -1,5 +1,6 @@
 use std::error::Error;
-use std::fmt;
+use std::slice::ChunksExact;
+use std::{fmt, mem};
 
 use zerocopy::{FromBytes, LittleEndian as LE, Unaligned, U16, U32};
 
@@ -61,13 +62,27 @@ pub struct Sf2PresetHeader {
 }
 
 pub struct Sf2PresetHeaderIterator<'a> {
-    buffer: &'a [u8],
-    i: usize,
+    iter: ChunksExact<'a, u8>,
 }
 
 impl<'a> Sf2PresetHeaderIterator<'a> {
     fn new(buffer: &'a [u8]) -> Self {
-        Self { buffer, i: 0 }
+        let iter = buffer.chunks_exact(mem::size_of::<Sf2PresetHeader>());
+        Self { iter }
+    }
+}
+
+impl<'a> Iterator for Sf2PresetHeaderIterator<'a> {
+    type Item = Sf2PresetHeader;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(preset_header_raw) = self.iter.next() {
+            let preset_header = Sf2PresetHeader::read_from_prefix(preset_header_raw).unwrap();
+            // TODO: EOP
+            Some(preset_header)
+        } else {
+            None
+        }
     }
 }
 
@@ -78,7 +93,7 @@ pub struct Sf2Soundfont<'a> {
 }
 
 impl<'a> Sf2Soundfont<'a> {
-    pub fn new(buffer: &[u8]) -> Sf2Result<Sf2Soundfont> {
+    pub fn new(buffer: &'a [u8]) -> Sf2Result<Sf2Soundfont<'a>> {
         let chunk_sfbk = RiffChunk::new(buffer)?;
 
         if chunk_sfbk.chunk_id() != "sfbk" {
