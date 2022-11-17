@@ -15,8 +15,8 @@ pub enum Sf2Error {
     RiffError(RiffError),
     InvalidRootChunk,
     MissingChunk(&'static str),
-    MalformedPresetName,
-    MalformedInfoString,
+    MalformedZstr,
+    MalformedFixedstr,
 }
 
 pub type Sf2Result<T> = Result<T, Sf2Error>;
@@ -27,8 +27,8 @@ impl Error for Sf2Error {
             Sf2Error::RiffError(err) => Some(err),
             Sf2Error::InvalidRootChunk => None,
             Sf2Error::MissingChunk(_) => None,
-            Sf2Error::MalformedPresetName => None,
-            Sf2Error::MalformedInfoString => None,
+            Sf2Error::MalformedZstr => None,
+            Sf2Error::MalformedFixedstr => None,
         }
     }
 }
@@ -39,8 +39,8 @@ impl fmt::Display for Sf2Error {
             Sf2Error::RiffError(_) => write!(f, "RIFF error"),
             Sf2Error::InvalidRootChunk => write!(f, "Invalid root chunk"),
             Sf2Error::MissingChunk(chunk_id) => write!(f, "Missing '{}' chunk", chunk_id),
-            Sf2Error::MalformedPresetName => write!(f, "Malformed preset name"),
-            Sf2Error::MalformedInfoString => write!(f, "Malformed info string"),
+            Sf2Error::MalformedZstr => write!(f, "Malformed zero-terminated string"),
+            Sf2Error::MalformedFixedstr => write!(f, "Malformed fixed-length string"),
         }
     }
 }
@@ -49,6 +49,23 @@ impl From<RiffError> for Sf2Error {
     fn from(err: RiffError) -> Self {
         Sf2Error::RiffError(err)
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+fn str_from_zstr<'a>(data: &'a [u8]) -> Sf2Result<&'a str> {
+    Ok(CStr::from_bytes_until_nul(data)
+        .map_err(|_| Sf2Error::MalformedZstr)?
+        .to_str()
+        .map_err(|_| Sf2Error::MalformedZstr)?)
+}
+
+fn str_from_fixedstr<'a>(data: &'a [u8]) -> Sf2Result<&'a str> {
+    // Fixed-length strings may contain garbage after the zero-terminator that may
+    // cause issues with the string conversion. (GeneralUser GS)
+    let terminator_pos = data.iter().position(|&b| b == b'\0').unwrap_or(data.len());
+
+    str::from_utf8(&data[..terminator_pos]).map_err(|_| Sf2Error::MalformedFixedstr)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -67,17 +84,7 @@ pub struct Sf2PresetHeader {
 
 impl Sf2PresetHeader {
     pub fn preset_name(&self) -> Sf2Result<&str> {
-        // Preset names may contain garbage after the zero-terminator that may
-        // cause issues with the string conversion. (GeneralUser GS)
-        let preset_name_end = self
-            .preset_name
-            .iter()
-            .position(|&b| b == b'\0')
-            .unwrap_or(self.preset_name.len());
-
-        let preset_name_trimmed = &self.preset_name[..preset_name_end];
-
-        str::from_utf8(preset_name_trimmed).map_err(|_| Sf2Error::MalformedPresetName)
+        str_from_fixedstr(&self.preset_name)
     }
 
     pub fn bank_preset(&self) -> (u16, u16) {
@@ -133,63 +140,72 @@ impl<'a> Sf2Info<'a> {
         Ok(Sf2Info { chunk_info })
     }
 
-    fn read_zstr_opt(&self, chunk_id: &'static str) -> Sf2Result<Option<&'a str>> {
+    fn read_zstr_chunk_opt(&self, chunk_id: &'static str) -> Sf2Result<Option<&'a str>> {
         if let Some(chunk) = self.chunk_info.subchunk(chunk_id)? {
-            Ok(Some(
-                CStr::from_bytes_until_nul(chunk.chunk_data()?)
-                    .map_err(|_| Sf2Error::MalformedInfoString)?
-                    .to_str()
-                    .map_err(|_| Sf2Error::MalformedInfoString)?,
-            ))
+            Ok(Some(str_from_zstr(chunk.chunk_data()?)?))
         } else {
             Ok(None)
         }
     }
 
-    fn read_zstr(&self, chunk_id: &'static str) -> Sf2Result<&'a str> {
-        self.read_zstr_opt(chunk_id)
-            .transpose()
-            .ok_or(Sf2Error::MissingChunk(chunk_id))?
+    fn read_zstr_chunk(&self, chunk_id: &'static str) -> Sf2Result<&'a str> {
+        if let Some(chunk) = self.chunk_info.subchunk(chunk_id)? {
+            Ok(str_from_zstr(chunk.chunk_data()?)?)
+        } else {
+            Err(Sf2Error::MissingChunk(chunk_id))
+        }
     }
 
-    // ifil
+    fn read_ver_chunk_opt(&self, chunk_id: &'static str) -> Sf2Result<Option<(u16, u16)>> {
+        Ok(Some((0, 0)))
+    }
+
+    fn read_ver_chunk(&self, chunk_id: &'static str) -> Sf2Result<(u16, u16)> {
+        Ok((0, 0))
+    }
+
+    pub fn format_version(&self) -> Sf2Result<(u16, u16)> {
+        self.read_ver_chunk("ifil")
+    }
 
     pub fn sound_engine(&self) -> Sf2Result<&'a str> {
-        self.read_zstr("isng")
+        self.read_zstr_chunk("isng")
     }
 
     pub fn soundfont_name(&self) -> Sf2Result<&'a str> {
-        self.read_zstr("INAM")
+        self.read_zstr_chunk("INAM")
     }
 
     pub fn rom_name(&self) -> Sf2Result<Option<&'a str>> {
-        self.read_zstr_opt("irom")
+        self.read_zstr_chunk_opt("irom")
     }
 
-    // iver
+    pub fn rom_version(&self) -> Sf2Result<Option<(u16, u16)>> {
+        self.read_ver_chunk_opt("iver")
+    }
 
     pub fn date(&self) -> Sf2Result<Option<&'a str>> {
-        self.read_zstr_opt("ICRD")
+        self.read_zstr_chunk_opt("ICRD")
     }
 
     pub fn author(&self) -> Sf2Result<Option<&'a str>> {
-        self.read_zstr_opt("IENG")
+        self.read_zstr_chunk_opt("IENG")
     }
 
     pub fn product(&self) -> Sf2Result<Option<&'a str>> {
-        self.read_zstr_opt("IPRD")
+        self.read_zstr_chunk_opt("IPRD")
     }
 
     pub fn copyright(&self) -> Sf2Result<Option<&'a str>> {
-        self.read_zstr_opt("ICOP")
+        self.read_zstr_chunk_opt("ICOP")
     }
 
     pub fn comment(&self) -> Sf2Result<Option<&'a str>> {
-        self.read_zstr_opt("ICMT")
+        self.read_zstr_chunk_opt("ICMT")
     }
 
     pub fn soundfont_tools(&self) -> Sf2Result<Option<Vec<&'a str>>> {
-        self.read_zstr_opt("ISFT")
+        self.read_zstr_chunk_opt("ISFT")
             .map(|opt| opt.map(|s| s.split(':').filter(|s| !s.is_empty()).collect_vec()))
     }
 }
