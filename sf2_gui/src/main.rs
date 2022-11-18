@@ -1,7 +1,7 @@
 use std::env;
 use std::fs::File;
 
-use eframe::egui::{CentralPanel, Context, Layout, TopBottomPanel};
+use eframe::egui::{CentralPanel, Context, Direction, Layout, TextEdit, TopBottomPanel};
 use eframe::emath::{vec2, Align};
 use egui_extras::{Size, TableBuilder};
 use itertools::Itertools;
@@ -12,6 +12,7 @@ use sf2_lib::sf2::{Sf2PresetHeader, Sf2Soundfont};
 
 struct Sf2GuiApp {
     preset_headers: Vec<((u16, u16), String)>,
+    filter_name: String,
     about_window_open: bool,
 }
 
@@ -39,6 +40,7 @@ impl Sf2GuiApp {
 
         Self {
             preset_headers,
+            filter_name: "".to_owned(),
             about_window_open: false,
         }
     }
@@ -72,9 +74,15 @@ impl eframe::App for Sf2GuiApp {
                         });
                     });
                     header.col(|ui| {
-                        ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                            ui.heading("Preset name");
-                        });
+                        ui.with_layout(
+                            Layout::left_to_right(Align::Center).with_main_justify(true),
+                            |ui| {
+                                ui.add(
+                                    TextEdit::singleline(&mut self.filter_name)
+                                        .hint_text("\u{1F50D} Preset name"),
+                                );
+                            },
+                        );
                     });
                 })
                 .body(|mut body| {
@@ -92,7 +100,13 @@ impl eframe::App for Sf2GuiApp {
                             });
                             row.col(|ui| {
                                 ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                    ui.label(preset_name);
+                                    let preset_symbol = if [120, 128].contains(bank) {
+                                        "\u{1F941}"
+                                    } else {
+                                        "\u{1F3B9}"
+                                    };
+
+                                    ui.label(format!("{preset_symbol:} {preset_name:}"));
                                 });
                             });
                         });
@@ -108,7 +122,7 @@ fn main() {
     let sf2_path = env::args().nth(1).expect("No input file argument");
 
     let options = eframe::NativeOptions {
-        initial_window_size: Some(vec2(500.0, 500.0)),
+        initial_window_size: Some(vec2(300.0, 600.0)),
         ..Default::default()
     };
 
