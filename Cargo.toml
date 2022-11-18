@@ -2,4 +2,5 @@
 members = [
     "sf2_cli",
     "sf2_lib",
+    "sf2_gui",
 ]
