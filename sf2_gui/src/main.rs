@@ -1,7 +1,7 @@
 use std::env;
 use std::fs::File;
 
-use eframe::egui::{CentralPanel, Context, Direction, Layout, TextEdit, TopBottomPanel};
+use eframe::egui::{CentralPanel, Context, Layout, TextEdit, TopBottomPanel};
 use eframe::emath::{vec2, Align};
 use egui_extras::{Size, TableBuilder};
 use itertools::Itertools;
@@ -12,7 +12,7 @@ use sf2_lib::sf2::{Sf2PresetHeader, Sf2Soundfont};
 
 struct Sf2GuiApp {
     preset_headers: Vec<((u16, u16), String)>,
-    filter_name: String,
+    search_query: String,
     about_window_open: bool,
 }
 
@@ -40,7 +40,7 @@ impl Sf2GuiApp {
 
         Self {
             preset_headers,
-            filter_name: "".to_owned(),
+            search_query: "".to_owned(),
             about_window_open: false,
         }
     }
@@ -62,15 +62,18 @@ impl eframe::App for Sf2GuiApp {
                 .column(Size::exact(20.0))
                 .column(Size::exact(20.0))
                 .column(Size::remainder().at_least(100.0))
+                .column(Size::exact(20.0))
                 .header(30.0, |mut header| {
                     header.col(|ui| {
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            ui.heading("\u{1F5C0}").on_hover_text("Bank number");
+                            ui.heading("\u{1F5C0}")
+                                .on_hover_text("\u{1F5C0} Bank number");
                         });
                     });
                     header.col(|ui| {
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            ui.heading("\u{1F3B5}").on_hover_text("Preset number");
+                            ui.heading("\u{1F3B5}")
+                                .on_hover_text("\u{1F3B5} Preset number");
                         });
                     });
                     header.col(|ui| {
@@ -78,11 +81,24 @@ impl eframe::App for Sf2GuiApp {
                             Layout::left_to_right(Align::Center).with_main_justify(true),
                             |ui| {
                                 ui.add(
-                                    TextEdit::singleline(&mut self.filter_name)
+                                    TextEdit::singleline(&mut self.search_query)
                                         .hint_text("\u{1F50D} Preset name"),
                                 );
                             },
                         );
+                    });
+                    header.col(|ui| {
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.add_enabled_ui(!self.search_query.is_empty(), |ui| {
+                                if ui
+                                    .button("\u{1F5D9}")
+                                    .on_hover_text("\u{1F5D9} Clear search query")
+                                    .clicked()
+                                {
+                                    self.search_query.clear();
+                                }
+                            });
+                        });
                     });
                 })
                 .body(|mut body| {
@@ -107,6 +123,11 @@ impl eframe::App for Sf2GuiApp {
                                     };
 
                                     ui.label(format!("{preset_symbol:} {preset_name:}"));
+                                });
+                            });
+                            row.col(|ui| {
+                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                    let _ = ui.button("\u{23F5}");
                                 });
                             });
                         });
