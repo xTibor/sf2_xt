@@ -142,9 +142,14 @@ impl eframe::App for Sf2GuiApp {
                             let matches_search = if self.search_query.is_empty() {
                                 false
                             } else {
-                                preset_name
+                                let preset_name_match = preset_name
                                     .to_lowercase()
-                                    .contains(&self.search_query.to_lowercase())
+                                    .contains(&self.search_query.to_lowercase());
+
+                                let bank_preset_match =
+                                    format!("{}:{}", bank, preset + 1).contains(&self.search_query);
+
+                                preset_name_match || bank_preset_match
                             };
 
                             ((bank, preset), preset_name, matches_search)
