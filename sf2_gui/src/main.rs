@@ -146,8 +146,13 @@ impl eframe::App for Sf2GuiApp {
                                     .to_lowercase()
                                     .contains(&self.search_query.to_lowercase());
 
-                                let bank_preset_match =
-                                    format!("{}:{}", bank, preset + 1).contains(&self.search_query);
+                                let bank_preset_match = if self.search_query.contains(':')
+                                    && self.search_query.len() > 1
+                                {
+                                    format!("{}:{}", bank, preset + 1).contains(&self.search_query)
+                                } else {
+                                    false
+                                };
 
                                 preset_name_match || bank_preset_match
                             };
