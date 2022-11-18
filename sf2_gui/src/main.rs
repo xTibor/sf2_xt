@@ -117,7 +117,24 @@ impl eframe::App for Sf2GuiApp {
                     });
                 })
                 .body(|mut body| {
-                    for ((bank, preset), preset_name) in &self.preset_headers {
+                    for ((bank, preset), preset_name, matches_search) in self
+                        .preset_headers
+                        .iter()
+                        .map(|((bank, preset), preset_name)| {
+                            let matches_search = if self.search_query.is_empty() {
+                                false
+                            } else {
+                                preset_name
+                                    .to_lowercase()
+                                    .contains(&self.search_query.to_lowercase())
+                            };
+
+                            ((bank, preset), preset_name, matches_search)
+                        })
+                        .sorted_by_key(|((bank, preset), _, matches_search)| {
+                            (!*matches_search, (*bank, *preset))
+                        })
+                    {
                         body.row(20.0, |mut row| {
                             row.col(|ui| {
                                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -137,7 +154,11 @@ impl eframe::App for Sf2GuiApp {
                                         "\u{1F3B9}"
                                     };
 
-                                    ui.label(format!("{preset_symbol:} {preset_name:}"));
+                                    if matches_search {
+                                        ui.strong(format!("{preset_symbol:} {preset_name:}"));
+                                    } else {
+                                        ui.label(format!("{preset_symbol:} {preset_name:}"));
+                                    }
                                 });
                             });
                             row.col(|ui| {
@@ -165,13 +186,13 @@ fn main() {
         "sf2_gui",
         options,
         Box::new(|_| {
-            let mut sf2_gui_app = Sf2GuiApp::new();
+            let mut app = Sf2GuiApp::new();
 
             if let Some(sf2_path) = env::args().nth(1) {
-                sf2_gui_app.load_sf2(Path::new(&sf2_path))
+                app.load_sf2(Path::new(&sf2_path))
             }
 
-            Box::new(sf2_gui_app)
+            Box::new(app)
         }),
     );
 }
