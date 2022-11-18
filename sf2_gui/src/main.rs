@@ -15,6 +15,7 @@ struct Sf2GuiApp {
     preset_headers: Vec<((u16, u16), String)>,
     search_query: String,
     about_window_open: bool,
+    request_scrollback: bool,
 }
 
 impl Sf2GuiApp {
@@ -23,6 +24,7 @@ impl Sf2GuiApp {
             preset_headers: Vec::new(),
             search_query: "".to_owned(),
             about_window_open: false,
+            request_scrollback: false,
         }
     }
 
@@ -46,6 +48,8 @@ impl Sf2GuiApp {
                 )
             })
             .collect::<Vec<_>>();
+
+        self.request_scrollback = true;
     }
 }
 
@@ -72,12 +76,20 @@ impl eframe::App for Sf2GuiApp {
         });
 
         CentralPanel::default().show(ctx, |ui| {
-            TableBuilder::new(ui)
+            let mut table_builder = TableBuilder::new(ui)
                 .striped(true)
                 .column(Size::exact(20.0))
                 .column(Size::exact(20.0))
                 .column(Size::remainder().at_least(100.0))
-                .column(Size::exact(20.0))
+                .column(Size::exact(20.0));
+
+            if self.request_scrollback {
+                // Uncomment when egui 0.20.0 releases
+                //table_builder = table_builder.vertical_scroll_offset(0.0);
+                self.request_scrollback = false;
+            }
+
+            table_builder
                 .header(30.0, |mut header| {
                     header.col(|ui| {
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -95,10 +107,15 @@ impl eframe::App for Sf2GuiApp {
                         ui.with_layout(
                             Layout::left_to_right(Align::Center).with_main_justify(true),
                             |ui| {
-                                ui.add(
-                                    TextEdit::singleline(&mut self.search_query)
-                                        .hint_text("\u{1F50D} Preset name"),
-                                );
+                                if ui
+                                    .add(
+                                        TextEdit::singleline(&mut self.search_query)
+                                            .hint_text("\u{1F50D} Preset name"),
+                                    )
+                                    .changed()
+                                {
+                                    self.request_scrollback = true;
+                                }
                             },
                         );
                     });
@@ -111,6 +128,7 @@ impl eframe::App for Sf2GuiApp {
                                     .clicked()
                                 {
                                     self.search_query.clear();
+                                    self.request_scrollback = true;
                                 }
                             });
                         });
