@@ -1321,6 +1321,7 @@ name = "sf2_gui"
 version = "0.1.0"
 dependencies = [
  "eframe",
+ "itertools",
  "memmap",
  "sf2_lib",
 ]
