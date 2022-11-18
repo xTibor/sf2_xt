@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "sf2_lib",
     "sf2_cli",
+    "sf2_lib",
 ]

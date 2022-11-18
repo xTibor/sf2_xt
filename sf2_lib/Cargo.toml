@@ -4,5 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-memmap = "0.7.0"
 zerocopy = "0.6.1"
