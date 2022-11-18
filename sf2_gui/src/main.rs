@@ -1,5 +1,6 @@
 use std::env;
 use std::fs::File;
+use std::path::Path;
 
 use eframe::egui::{CentralPanel, Context, Layout, TextEdit, TopBottomPanel};
 use eframe::emath::{vec2, Align};
@@ -17,7 +18,15 @@ struct Sf2GuiApp {
 }
 
 impl Sf2GuiApp {
-    pub fn new(sf2_path: &str) -> Self {
+    pub fn new() -> Self {
+        Self {
+            preset_headers: Vec::new(),
+            search_query: "".to_owned(),
+            about_window_open: false,
+        }
+    }
+
+    pub fn load_sf2(&mut self, sf2_path: &Path) {
         let sf2_file = File::open(sf2_path).expect("Failed to open input file");
         let sf2_mmap = unsafe {
             MmapOptions::new()
@@ -26,7 +35,7 @@ impl Sf2GuiApp {
         };
         let sf2_soundfont = Sf2Soundfont::new(&sf2_mmap).unwrap();
 
-        let preset_headers = sf2_soundfont
+        self.preset_headers = sf2_soundfont
             .preset_headers()
             .unwrap()
             .sorted_by_key(Sf2PresetHeader::bank_preset)
@@ -37,17 +46,23 @@ impl Sf2GuiApp {
                 )
             })
             .collect::<Vec<_>>();
-
-        Self {
-            preset_headers,
-            search_query: "".to_owned(),
-            about_window_open: false,
-        }
     }
 }
 
 impl eframe::App for Sf2GuiApp {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        if !ctx.input().raw.dropped_files.is_empty() {
+            if let Some(sf2_path) = ctx
+                .input()
+                .raw
+                .dropped_files
+                .first()
+                .and_then(|f| f.path.as_ref())
+            {
+                self.load_sf2(sf2_path);
+            }
+        }
+
         TopBottomPanel::top("mainmenu").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("About").clicked() {
@@ -116,7 +131,7 @@ impl eframe::App for Sf2GuiApp {
                             });
                             row.col(|ui| {
                                 ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                    let preset_symbol = if [120, 128].contains(bank) {
+                                    let preset_symbol = if [120, 127, 128].contains(bank) {
                                         "\u{1F941}"
                                     } else {
                                         "\u{1F3B9}"
@@ -140,16 +155,23 @@ impl eframe::App for Sf2GuiApp {
 }
 
 fn main() {
-    let sf2_path = env::args().nth(1).expect("No input file argument");
-
     let options = eframe::NativeOptions {
         initial_window_size: Some(vec2(300.0, 600.0)),
+        drag_and_drop_support: true,
         ..Default::default()
     };
 
     eframe::run_native(
         "sf2_gui",
         options,
-        Box::new(move |_| Box::new(Sf2GuiApp::new(&sf2_path))),
+        Box::new(|_| {
+            let mut sf2_gui_app = Sf2GuiApp::new();
+
+            if let Some(sf2_path) = env::args().nth(1) {
+                sf2_gui_app.load_sf2(Path::new(&sf2_path))
+            }
+
+            Box::new(sf2_gui_app)
+        }),
     );
 }
