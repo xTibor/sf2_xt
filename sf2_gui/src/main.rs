@@ -1,59 +1,56 @@
-use std::env;
 use std::fs::File;
 use std::path::Path;
+use std::{env, mem};
 
 use eframe::egui::{CentralPanel, Context, Layout, TextEdit, TopBottomPanel};
 use eframe::emath::{vec2, Align};
 use egui_extras::{Size, TableBuilder};
 use itertools::Itertools;
-use memmap::MmapOptions;
+use memmap::{Mmap, MmapOptions};
 
 use egui_extras_xt::show_about_window;
 use sf2_lib::sf2::{Sf2PresetHeader, Sf2Soundfont};
 
-struct Sf2GuiApp {
-    preset_headers: Vec<((u16, u16), String)>,
+struct Sf2GuiApp<'a> {
     search_query: String,
     about_window_open: bool,
     request_scrollback: bool,
+
+    sf2_mmap: Option<Mmap>,
+    sf2_soundfont: Option<Sf2Soundfont<'a>>,
 }
 
-impl Sf2GuiApp {
+impl<'a> Sf2GuiApp<'a> {
     pub fn new() -> Self {
         Self {
-            preset_headers: Vec::new(),
             search_query: "".to_owned(),
             about_window_open: false,
             request_scrollback: false,
+            sf2_mmap: None,
+            sf2_soundfont: None,
         }
     }
 
     pub fn load_sf2(&mut self, sf2_path: &Path) {
         let sf2_file = File::open(sf2_path).expect("Failed to open input file");
-        let sf2_mmap = unsafe {
+
+        self.sf2_mmap = Some(unsafe {
             MmapOptions::new()
                 .map(&sf2_file)
                 .expect("Failed to mmap input file")
-        };
-        let sf2_soundfont = Sf2Soundfont::new(&sf2_mmap).unwrap();
+        });
 
-        self.preset_headers = sf2_soundfont
-            .preset_headers()
-            .unwrap()
-            .sorted_by_key(Sf2PresetHeader::bank_preset)
-            .map(|preset_header| {
-                (
-                    preset_header.bank_preset(),
-                    preset_header.preset_name().unwrap().to_owned(),
-                )
-            })
-            .collect::<Vec<_>>();
+        self.sf2_soundfont = Some(unsafe {
+            let sf2_mmap_transmuted_lifetime =
+                mem::transmute::<&[u8], &[u8]>(&self.sf2_mmap.as_ref().unwrap());
+            Sf2Soundfont::new(sf2_mmap_transmuted_lifetime).unwrap()
+        });
 
         self.request_scrollback = true;
     }
 }
 
-impl eframe::App for Sf2GuiApp {
+impl<'a> eframe::App for Sf2GuiApp<'a> {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         if !ctx.input().raw.dropped_files.is_empty() {
             if let Some(sf2_path) = ctx
@@ -135,9 +132,11 @@ impl eframe::App for Sf2GuiApp {
                     });
                 })
                 .body(|mut body| {
-                    for ((bank, preset), preset_name, matches_search) in self
-                        .preset_headers
-                        .iter()
+                    //let sf2_soundfont = Sf2Soundfont::new(&self.sf2_mmap.as_ref().unwrap()).unwrap();
+
+                    if let Some(sf2_soundfont) = &self.sf2_soundfont {
+                        for preset_header in sf2_soundfont.preset_headers().unwrap()
+                        /*
                         .map(|((bank, preset), preset_name)| {
                             let matches_search = if self.search_query.is_empty() {
                                 false
@@ -161,40 +160,45 @@ impl eframe::App for Sf2GuiApp {
                         })
                         .sorted_by_key(|((bank, preset), _, matches_search)| {
                             (!*matches_search, (*bank, *preset))
-                        })
-                    {
-                        body.row(20.0, |mut row| {
-                            row.col(|ui| {
-                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                    ui.monospace(bank.to_string())
+                        })*/
+                        {
+                            body.row(20.0, |mut row| {
+                                row.col(|ui| {
+                                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                        ui.monospace(preset_header.bank().to_string())
+                                    });
                                 });
-                            });
-                            row.col(|ui| {
-                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                    ui.monospace((preset + 1).to_string());
+                                row.col(|ui| {
+                                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                        ui.monospace((preset_header.preset() + 1).to_string());
+                                    });
                                 });
-                            });
-                            row.col(|ui| {
-                                ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                    let preset_symbol = if [120, 127, 128].contains(bank) {
-                                        "\u{1F941}"
-                                    } else {
-                                        "\u{1F3B9}"
-                                    };
+                                row.col(|ui| {
+                                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                                        let preset_symbol =
+                                            if [120, 127, 128].contains(&preset_header.bank()) {
+                                                "\u{1F941}"
+                                            } else {
+                                                "\u{1F3B9}"
+                                            };
 
-                                    if matches_search {
-                                        ui.strong(format!("{preset_symbol:} {preset_name:}"));
-                                    } else {
-                                        ui.label(format!("{preset_symbol:} {preset_name:}"));
-                                    }
+                                        //if matches_search {
+                                        //    ui.strong(format!("{preset_symbol:} {preset_name:}"));
+                                        //} else {
+                                        ui.label(format!(
+                                            "{preset_symbol:} {preset_name:}",
+                                            preset_name = preset_header.preset_name().unwrap()
+                                        ));
+                                        //}
+                                    });
+                                });
+                                row.col(|ui| {
+                                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                        let _ = ui.button("\u{23F5}");
+                                    });
                                 });
                             });
-                            row.col(|ui| {
-                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                    let _ = ui.button("\u{23F5}");
-                                });
-                            });
-                        });
+                        }
                     }
                 });
         });
