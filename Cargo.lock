@@ -58,10 +58,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "sf2-memmap"
+name = "sf2_cli"
 version = "0.1.0"
 dependencies = [
  "itertools",
+ "memmap",
+ "sf2_lib",
+]
+
+[[package]]
+name = "sf2_lib"
+version = "0.1.0"
+dependencies = [
  "memmap",
  "zerocopy",
 ]

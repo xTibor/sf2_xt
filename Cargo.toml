@@ -1,21 +1,5 @@
-[package]
-name = "sf2-memmap"
-version = "0.1.0"
-edition = "2021"
-
-[lib]
-name = "sf2lib"
-path = "src/lib/lib.rs"
-
-[[bin]]
-name = "riff-info"
-path = "src/bin/riff_info.rs"
-
-[[bin]]
-name = "sf2-info"
-path = "src/bin/sf2_info.rs"
-
-[dependencies]
-itertools = "0.10.5"
-memmap = "0.7.0"
-zerocopy = "0.6.1"
+[workspace]
+members = [
+    "sf2_lib",
+    "sf2_cli",
+]
