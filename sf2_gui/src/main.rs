@@ -1,14 +1,18 @@
 use std::env;
 use std::fs::File;
 
-use eframe::egui::{CentralPanel, Context, Grid, Layout, ScrollArea};
+use eframe::egui::{CentralPanel, Context, Layout, TopBottomPanel};
 use eframe::emath::{vec2, Align};
+use egui_extras::{Size, TableBuilder};
 use itertools::Itertools;
 use memmap::MmapOptions;
+
+use egui_extras_xt::show_about_window;
 use sf2_lib::sf2::{Sf2PresetHeader, Sf2Soundfont};
 
 struct Sf2GuiApp {
     preset_headers: Vec<((u16, u16), String)>,
+    about_window_open: bool,
 }
 
 impl Sf2GuiApp {
@@ -33,45 +37,70 @@ impl Sf2GuiApp {
             })
             .collect::<Vec<_>>();
 
-        Self { preset_headers }
+        Self {
+            preset_headers,
+            about_window_open: false,
+        }
     }
 }
 
 impl eframe::App for Sf2GuiApp {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        CentralPanel::default().show(ctx, |ui| {
-            ScrollArea::vertical().show(ui, |ui| {
-                Grid::new("presets")
-                    .num_columns(3)
-                    .spacing([20.0, 10.0])
-                    .striped(true)
-                    .show(ui, |ui| {
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            ui.strong("Bank")
-                        });
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            ui.strong("Preset")
-                        });
-                        ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                            ui.strong("Name")
-                        });
-                        ui.end_row();
-
-                        for ((bank, preset), preset_name) in &self.preset_headers {
-                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                ui.label(bank.to_string())
-                            });
-                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                ui.label(preset.to_string())
-                            });
-                            ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                ui.label(preset_name)
-                            });
-                            ui.end_row();
-                        }
-                    });
+        TopBottomPanel::top("mainmenu").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                if ui.button("About").clicked() {
+                    self.about_window_open = true;
+                }
             });
         });
+
+        CentralPanel::default().show(ctx, |ui| {
+            TableBuilder::new(ui)
+                .striped(true)
+                .column(Size::exact(20.0))
+                .column(Size::exact(20.0))
+                .column(Size::remainder().at_least(100.0))
+                .header(30.0, |mut header| {
+                    header.col(|ui| {
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.heading("\u{1F5C0}").on_hover_text("Bank number");
+                        });
+                    });
+                    header.col(|ui| {
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.heading("\u{1F3B5}").on_hover_text("Preset number");
+                        });
+                    });
+                    header.col(|ui| {
+                        ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                            ui.heading("Preset name");
+                        });
+                    });
+                })
+                .body(|mut body| {
+                    for ((bank, preset), preset_name) in &self.preset_headers {
+                        body.row(20.0, |mut row| {
+                            row.col(|ui| {
+                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                    ui.monospace(bank.to_string())
+                                });
+                            });
+                            row.col(|ui| {
+                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                    ui.monospace((preset + 1).to_string());
+                                });
+                            });
+                            row.col(|ui| {
+                                ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                                    ui.label(preset_name);
+                                });
+                            });
+                        });
+                    }
+                });
+        });
+
+        show_about_window!(ctx, &mut self.about_window_open);
     }
 }
 
