@@ -52,21 +52,20 @@ impl<'a> Sf2GuiApp<'a> {
             Sf2Soundfont::new(sf2_mmap_transmuted_lifetime).unwrap()
         });
 
-        self.request_scrollback = true;
         self.resort_preset_headers();
     }
 
     pub fn resort_preset_headers(&mut self) {
         println!("RESORTED");
-        self.sf2_sorted_preset_headers = self
-            .sf2_soundfont
-            .as_ref()
-            .unwrap()
-            .preset_headers()
-            .unwrap()
-            .sorted_by_key(|preset_header| preset_header.bank_preset())
-            .map(|preset_header| (preset_header, false))
-            .collect::<Vec<_>>();
+        if let Some(sf2_soundfont) = &self.sf2_soundfont {
+            self.sf2_sorted_preset_headers = sf2_soundfont
+                .preset_headers()
+                .unwrap()
+                .sorted_by_key(|preset_header| preset_header.bank_preset())
+                .map(|preset_header| (preset_header, false))
+                .collect::<Vec<_>>();
+            self.request_scrollback = true;
+        }
     }
 }
 
@@ -204,7 +203,6 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                                     )
                                     .changed()
                                 {
-                                    self.request_scrollback = true;
                                     self.resort_preset_headers();
                                 }
                             },
@@ -219,7 +217,6 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                                     .clicked()
                                 {
                                     self.search_query.clear();
-                                    self.request_scrollback = true;
                                     self.resort_preset_headers();
                                 }
                             });
