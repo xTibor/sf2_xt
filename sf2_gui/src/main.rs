@@ -4,7 +4,7 @@ use std::{env, mem};
 
 use eframe::egui::{
     CentralPanel, CollapsingHeader, Context, Layout, ScrollArea, SidePanel, TextEdit,
-    TopBottomPanel,
+    TopBottomPanel, Ui,
 };
 use eframe::emath::{vec2, Align};
 use egui_extras::{Size, TableBuilder};
@@ -79,28 +79,63 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                 if let Some(sf2_soundfont) = &self.sf2_soundfont {
                     let sf2_info = sf2_soundfont.info().unwrap();
 
-                    if let Ok(sf2_soundfont_name) = sf2_info.soundfont_name() {
-                        CollapsingHeader::new("Soundfont name")
-                            .default_open(true)
-                            .show(ui, |ui| {
-                                ui.label(sf2_soundfont_name);
-                            });
+                    fn add_section(
+                        ui: &mut Ui,
+                        section_name: &str,
+                        default_open: bool,
+                        section_contents: &str,
+                    ) {
+                        if !section_contents.trim().is_empty() {
+                            CollapsingHeader::new(section_name)
+                                .default_open(default_open)
+                                .show(ui, |ui| {
+                                    ui.label(section_contents);
+                                });
+                        }
                     }
 
-                    if let Ok(Some(sf2_copyright)) = sf2_info.copyright() {
-                        CollapsingHeader::new("Copyright")
-                            .default_open(true)
-                            .show(ui, |ui| {
-                                ui.label(sf2_copyright);
-                            });
+                    if let Ok(soundfont_name) = sf2_info.soundfont_name() {
+                        add_section(ui, "Soundfont name", true, soundfont_name);
                     }
 
-                    if let Ok(Some(sf2_comment)) = sf2_info.comment() {
-                        CollapsingHeader::new("Comment")
-                            .default_open(true)
-                            .show(ui, |ui| {
-                                ui.label(sf2_comment);
-                            });
+                    if let Ok(Some(author)) = sf2_info.author() {
+                        add_section(ui, "Author", true, author);
+                    }
+
+                    if let Ok(Some(copyright)) = sf2_info.copyright() {
+                        add_section(ui, "Copyright", true, copyright);
+                    }
+
+                    if let Ok(Some(comment)) = sf2_info.comment() {
+                        add_section(ui, "Comment", true, comment);
+                    }
+
+                    if let Ok((major, minor)) = sf2_info.format_version() {
+                        add_section(ui, "Format version", true, &format!("{major:}.{minor:02}"));
+                    }
+
+                    if let Ok(sound_engine) = sf2_info.sound_engine() {
+                        add_section(ui, "Sound engine", true, sound_engine);
+                    }
+
+                    if let Ok(Some(rom_name)) = sf2_info.rom_name() {
+                        add_section(ui, "ROM name", true, rom_name);
+                    }
+
+                    if let Ok(Some((major, minor))) = sf2_info.rom_version() {
+                        add_section(ui, "ROM version", true, &format!("{major:}.{minor:02}"));
+                    }
+
+                    if let Ok(Some(date)) = sf2_info.date() {
+                        add_section(ui, "Date", true, date);
+                    }
+
+                    if let Ok(Some(product)) = sf2_info.product() {
+                        add_section(ui, "Product", true, product);
+                    }
+
+                    if let Ok(Some(soundfont_tools)) = sf2_info.soundfont_tools() {
+                        add_section(ui, "Soundfont tools", true, &soundfont_tools.join(", "));
                     }
                 }
             });
