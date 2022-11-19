@@ -307,19 +307,19 @@ impl IsTerminalRecord for Sf2Sample {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-pub struct Sf2Soundfont<'a> {
+pub struct Sf2SoundFont<'a> {
     chunk_sfbk: RiffChunk<'a>,
 }
 
-impl<'a> Sf2Soundfont<'a> {
-    pub fn new(buffer: &'a [u8]) -> Sf2Result<Sf2Soundfont<'a>> {
+impl<'a> Sf2SoundFont<'a> {
+    pub fn new(buffer: &'a [u8]) -> Sf2Result<Sf2SoundFont<'a>> {
         let chunk_sfbk = RiffChunk::new(buffer)?;
 
         if chunk_sfbk.chunk_id() != "sfbk" {
             return Err(Sf2Error::InvalidRootChunk);
         }
 
-        Ok(Sf2Soundfont { chunk_sfbk })
+        Ok(Sf2SoundFont { chunk_sfbk })
     }
 
     pub fn preset_headers(&self) -> Sf2Result<Sf2RecordIterator<Sf2PresetHeader>> {

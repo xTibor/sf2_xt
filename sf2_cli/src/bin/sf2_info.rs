@@ -4,7 +4,7 @@ use std::fs::File;
 
 use itertools::Itertools;
 use memmap::MmapOptions;
-use sf2_lib::sf2::{Sf2PresetHeader, Sf2Soundfont};
+use sf2_lib::sf2::{Sf2PresetHeader, Sf2SoundFont};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let sf2_path = env::args().nth(1).expect("No input file argument");
@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .expect("Failed to mmap input file")
     };
 
-    let sf2_soundfont = Sf2Soundfont::new(sf2_mmap)?;
+    let sf2_soundfont = Sf2SoundFont::new(sf2_mmap)?;
 
     let sf2_info = sf2_soundfont.info()?;
 

@@ -12,7 +12,7 @@ use itertools::Itertools;
 use memmap::{Mmap, MmapOptions};
 
 use egui_extras_xt::show_about_window;
-use sf2_lib::sf2::{Sf2PresetHeader, Sf2Soundfont};
+use sf2_lib::sf2::{Sf2PresetHeader, Sf2SoundFont};
 
 struct Sf2GuiApp<'a> {
     search_query: String,
@@ -20,7 +20,7 @@ struct Sf2GuiApp<'a> {
     request_scrollback: bool,
 
     sf2_mmap: Option<Mmap>,
-    sf2_soundfont: Option<Sf2Soundfont<'a>>,
+    sf2_soundfont: Option<Sf2SoundFont<'a>>,
     sf2_sorted_preset_headers: Vec<(Sf2PresetHeader, bool)>,
 }
 
@@ -49,7 +49,7 @@ impl<'a> Sf2GuiApp<'a> {
         self.sf2_soundfont = Some(unsafe {
             let sf2_mmap_transmuted_lifetime =
                 mem::transmute::<&[u8], &[u8]>(&self.sf2_mmap.as_ref().unwrap());
-            Sf2Soundfont::new(sf2_mmap_transmuted_lifetime).unwrap()
+            Sf2SoundFont::new(sf2_mmap_transmuted_lifetime).unwrap()
         });
 
         self.resort_preset_headers();
@@ -118,7 +118,7 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                     }
 
                     if let Ok(soundfont_name) = sf2_info.soundfont_name() {
-                        add_section(ui, "Soundfont name", true, soundfont_name);
+                        add_section(ui, "SoundFont name", true, soundfont_name);
                     }
 
                     if let Ok(Some(author)) = sf2_info.author() {
@@ -158,7 +158,7 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                     }
 
                     if let Ok(Some(soundfont_tools)) = sf2_info.soundfont_tools() {
-                        add_section(ui, "Soundfont tools", true, &soundfont_tools.join(", "));
+                        add_section(ui, "SoundFont tools", true, &soundfont_tools.join(", "));
                     }
                 }
             });
