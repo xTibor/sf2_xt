@@ -58,17 +58,46 @@ impl<'a> Sf2GuiApp<'a> {
     pub fn resort_preset_headers(&mut self) {
         println!("RESORTED");
         if let Some(sf2_soundfont) = &self.sf2_soundfont {
+            let bank_preset_query =
+                self.search_query
+                    .trim()
+                    .split_once(':')
+                    .map(|(bank, preset)| {
+                        (
+                            bank.trim().parse::<u16>().ok(),
+                            preset.trim().parse::<u16>().ok(),
+                        )
+                    });
+
             self.sf2_sorted_preset_headers = sf2_soundfont
                 .preset_headers()
                 .unwrap()
                 .map(|preset_header| {
-                    let matches_preset_name = preset_header
-                        .preset_name()
-                        .unwrap()
-                        .to_lowercase()
-                        .contains(&self.search_query.to_lowercase());
+                    let matches_search = if let Some((bank, preset)) = bank_preset_query {
+                        let any_field_present = bank.is_some() || preset.is_some();
 
-                    let matches_search = !self.search_query.is_empty() && matches_preset_name;
+                        let bank_matches = if let Some(bank) = bank {
+                            preset_header.bank() == bank
+                        } else {
+                            true
+                        };
+
+                        let preset_matches = if let Some(preset) = preset {
+                            preset_header.preset() + 1 == preset
+                        } else {
+                            true
+                        };
+
+                        any_field_present & bank_matches && preset_matches
+                    } else {
+                        let matches_preset_name = preset_header
+                            .preset_name()
+                            .unwrap()
+                            .to_lowercase()
+                            .contains(&self.search_query.to_lowercase());
+
+                        !self.search_query.is_empty() && matches_preset_name
+                    };
 
                     (preset_header, matches_search)
                 })
