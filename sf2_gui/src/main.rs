@@ -61,8 +61,20 @@ impl<'a> Sf2GuiApp<'a> {
             self.sf2_sorted_preset_headers = sf2_soundfont
                 .preset_headers()
                 .unwrap()
-                .sorted_by_key(|preset_header| preset_header.bank_preset())
-                .map(|preset_header| (preset_header, false))
+                .map(|preset_header| {
+                    let matches_preset_name = preset_header
+                        .preset_name()
+                        .unwrap()
+                        .to_lowercase()
+                        .contains(&self.search_query.to_lowercase());
+
+                    let matches_search = !self.search_query.is_empty() && matches_preset_name;
+
+                    (preset_header, matches_search)
+                })
+                .sorted_by_key(|(preset_header, matches_search)| {
+                    (!matches_search, preset_header.bank_preset())
+                })
                 .collect::<Vec<_>>();
             self.request_scrollback = true;
         }
