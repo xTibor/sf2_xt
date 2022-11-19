@@ -28,6 +28,7 @@ impl<'a> Sf2GuiApp<'a> {
             search_query: "".to_owned(),
             about_window_open: false,
             request_scrollback: false,
+
             sf2_mmap: None,
             sf2_soundfont: None,
         }
@@ -53,7 +54,7 @@ impl<'a> Sf2GuiApp<'a> {
 }
 
 impl<'a> eframe::App for Sf2GuiApp<'a> {
-    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
         if !ctx.input().raw.dropped_files.is_empty() {
             if let Some(sf2_path) = ctx
                 .input()
@@ -68,6 +69,12 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
 
         TopBottomPanel::top("mainmenu").show(ctx, |ui| {
             ui.horizontal(|ui| {
+                ui.menu_button("File", |ui| {
+                    if ui.button("Exit").clicked() {
+                        frame.close();
+                    }
+                });
+
                 if ui.button("About").clicked() {
                     self.about_window_open = true;
                 }
@@ -201,8 +208,6 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                     });
                 })
                 .body(|mut body| {
-                    //let sf2_soundfont = Sf2Soundfont::new(&self.sf2_mmap.as_ref().unwrap()).unwrap();
-
                     if let Some(sf2_soundfont) = &self.sf2_soundfont {
                         for preset_header in sf2_soundfont.preset_headers().unwrap()
                         /*
