@@ -12,16 +12,16 @@ use itertools::Itertools;
 use memmap::{Mmap, MmapOptions};
 
 use egui_extras_xt::show_about_window;
-use sf2_lib::sf2::Sf2Soundfont;
+use sf2_lib::sf2::{Sf2PresetHeader, Sf2Soundfont};
 
 struct Sf2GuiApp<'a> {
     search_query: String,
     about_window_open: bool,
     request_scrollback: bool,
-    preset_header_sort_map: Vec<(usize, bool)>,
 
     sf2_mmap: Option<Mmap>,
     sf2_soundfont: Option<Sf2Soundfont<'a>>,
+    sf2_sorted_preset_headers: Vec<(Sf2PresetHeader, bool)>,
 }
 
 impl<'a> Sf2GuiApp<'a> {
@@ -30,10 +30,10 @@ impl<'a> Sf2GuiApp<'a> {
             search_query: "".to_owned(),
             about_window_open: false,
             request_scrollback: false,
-            preset_header_sort_map: Vec::new(),
 
             sf2_mmap: None,
             sf2_soundfont: None,
+            sf2_sorted_preset_headers: Vec::new(),
         }
     }
 
@@ -53,20 +53,19 @@ impl<'a> Sf2GuiApp<'a> {
         });
 
         self.request_scrollback = true;
-        self.regenerate_sort_map();
+        self.resort_preset_headers();
     }
 
-    pub fn regenerate_sort_map(&mut self) {
+    pub fn resort_preset_headers(&mut self) {
         println!("RESORTED");
-        self.preset_header_sort_map = self
+        self.sf2_sorted_preset_headers = self
             .sf2_soundfont
             .as_ref()
             .unwrap()
             .preset_headers()
             .unwrap()
-            .enumerate()
-            .sorted_by_key(|(index, preset_header)| preset_header.bank_preset())
-            .map(|(index, _)| (index, false))
+            .sorted_by_key(|preset_header| preset_header.bank_preset())
+            .map(|preset_header| (preset_header, false))
             .collect::<Vec<_>>();
     }
 }
@@ -206,7 +205,7 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                                     .changed()
                                 {
                                     self.request_scrollback = true;
-                                    self.regenerate_sort_map();
+                                    self.resort_preset_headers();
                                 }
                             },
                         );
@@ -221,64 +220,53 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                                 {
                                     self.search_query.clear();
                                     self.request_scrollback = true;
-                                    self.regenerate_sort_map();
+                                    self.resort_preset_headers();
                                 }
                             });
                         });
                     });
                 })
                 .body(|mut body| {
-                    if let Some(sf2_soundfont) = &self.sf2_soundfont {
-                        let preset_headers =
-                            sf2_soundfont.preset_headers().unwrap().collect::<Vec<_>>();
-
-                        for (preset_header, matches_search) in self
-                            .preset_header_sort_map
-                            .iter()
-                            .map(|(index, matches_search)| {
-                                (&preset_headers[*index], matches_search)
-                            })
-                        {
-                            body.row(20.0, |mut row| {
-                                row.col(|ui| {
-                                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                        ui.monospace(preset_header.bank().to_string())
-                                    });
-                                });
-                                row.col(|ui| {
-                                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                        ui.monospace((preset_header.preset() + 1).to_string());
-                                    });
-                                });
-                                row.col(|ui| {
-                                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                        let preset_symbol =
-                                            if [120, 127, 128].contains(&preset_header.bank()) {
-                                                "\u{1F941}"
-                                            } else {
-                                                "\u{1F3B9}"
-                                            };
-
-                                        if *matches_search {
-                                            ui.strong(format!(
-                                                "{preset_symbol:} {preset_name:}",
-                                                preset_name = preset_header.preset_name().unwrap()
-                                            ));
-                                        } else {
-                                            ui.label(format!(
-                                                "{preset_symbol:} {preset_name:}",
-                                                preset_name = preset_header.preset_name().unwrap()
-                                            ));
-                                        }
-                                    });
-                                });
-                                row.col(|ui| {
-                                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                        let _ = ui.button("\u{23F5}");
-                                    });
+                    for (preset_header, matches_search) in &self.sf2_sorted_preset_headers {
+                        body.row(20.0, |mut row| {
+                            row.col(|ui| {
+                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                    ui.monospace(preset_header.bank().to_string())
                                 });
                             });
-                        }
+                            row.col(|ui| {
+                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                    ui.monospace((preset_header.preset() + 1).to_string());
+                                });
+                            });
+                            row.col(|ui| {
+                                ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                                    let preset_symbol =
+                                        if [120, 127, 128].contains(&preset_header.bank()) {
+                                            "\u{1F941}"
+                                        } else {
+                                            "\u{1F3B9}"
+                                        };
+
+                                    if *matches_search {
+                                        ui.strong(format!(
+                                            "{preset_symbol:} {preset_name:}",
+                                            preset_name = preset_header.preset_name().unwrap()
+                                        ));
+                                    } else {
+                                        ui.label(format!(
+                                            "{preset_symbol:} {preset_name:}",
+                                            preset_name = preset_header.preset_name().unwrap()
+                                        ));
+                                    }
+                                });
+                            });
+                            row.col(|ui| {
+                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                    let _ = ui.button("\u{23F5}");
+                                });
+                            });
+                        });
                     }
                 });
         });
