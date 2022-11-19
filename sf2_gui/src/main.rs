@@ -3,7 +3,7 @@ use std::path::Path;
 use std::{env, mem};
 
 use eframe::egui::{
-    CentralPanel, CollapsingHeader, Context, Layout, ScrollArea, SidePanel, TextEdit,
+    CentralPanel, CollapsingHeader, Context, Layout, ScrollArea, SidePanel, TextEdit, TextStyle,
     TopBottomPanel, Ui,
 };
 use eframe::emath::{vec2, Align};
@@ -56,7 +56,6 @@ impl<'a> Sf2GuiApp<'a> {
     }
 
     pub fn resort_preset_headers(&mut self) {
-        println!("RESORTED");
         if let Some(sf2_soundfont) = &self.sf2_soundfont {
             let bank_preset_query =
                 self.search_query
@@ -105,6 +104,9 @@ impl<'a> Sf2GuiApp<'a> {
                     (!matches_search, preset_header.bank_preset())
                 })
                 .collect::<Vec<_>>();
+            self.request_scrollback = true;
+        } else {
+            self.sf2_sorted_preset_headers = Vec::new();
             self.request_scrollback = true;
         }
     }
@@ -206,109 +208,124 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
         });
 
         CentralPanel::default().show(ctx, |ui| {
-            let mut table_builder = TableBuilder::new(ui)
-                .striped(true)
-                .column(Size::exact(20.0))
-                .column(Size::exact(20.0))
-                .column(Size::remainder().at_least(100.0))
-                .column(Size::exact(20.0));
+            if self.sf2_soundfont.is_some() {
+                let mut table_builder = TableBuilder::new(ui)
+                    .striped(true)
+                    .column(Size::exact(20.0))
+                    .column(Size::exact(20.0))
+                    .column(Size::remainder().at_least(100.0))
+                    .column(Size::exact(20.0));
 
-            if self.request_scrollback {
-                // Uncomment when egui 0.20.0 releases
-                //table_builder = table_builder.vertical_scroll_offset(0.0);
-                self.request_scrollback = false;
-            }
+                if self.request_scrollback {
+                    // Uncomment when egui 0.20.0 releases
+                    //table_builder = table_builder.vertical_scroll_offset(0.0);
+                    self.request_scrollback = false;
+                }
 
-            table_builder
-                .header(30.0, |mut header| {
-                    header.col(|ui| {
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            ui.heading("\u{1F5C0}")
-                                .on_hover_text("\u{1F5C0} Bank number");
-                        });
-                    });
-                    header.col(|ui| {
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            ui.heading("\u{1F3B5}")
-                                .on_hover_text("\u{1F3B5} Preset number");
-                        });
-                    });
-                    header.col(|ui| {
-                        ui.with_layout(
-                            Layout::left_to_right(Align::Center).with_main_justify(true),
-                            |ui| {
-                                if ui
-                                    .add(
-                                        TextEdit::singleline(&mut self.search_query)
-                                            .hint_text("\u{1F50D} Preset name"),
-                                    )
-                                    .changed()
-                                {
-                                    self.resort_preset_headers();
-                                }
-                            },
-                        );
-                    });
-                    header.col(|ui| {
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            ui.add_enabled_ui(!self.search_query.is_empty(), |ui| {
-                                if ui
-                                    .button("\u{1F5D9}")
-                                    .on_hover_text("\u{1F5D9} Clear search query")
-                                    .clicked()
-                                {
-                                    self.search_query.clear();
-                                    self.resort_preset_headers();
-                                }
+                table_builder
+                    .header(30.0, |mut header| {
+                        header.col(|ui| {
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                ui.heading("\u{1F5C0}")
+                                    .on_hover_text("\u{1F5C0} Bank number");
                             });
                         });
-                    });
-                })
-                .body(|mut body| {
-                    for (preset_header, matches_search) in &self.sf2_sorted_preset_headers {
-                        body.row(20.0, |mut row| {
-                            row.col(|ui| {
-                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                    ui.monospace(preset_header.bank().to_string())
+                        header.col(|ui| {
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                ui.heading("\u{1F3B5}")
+                                    .on_hover_text("\u{1F3B5} Preset number");
+                            });
+                        });
+                        header.col(|ui| {
+                            ui.with_layout(
+                                Layout::left_to_right(Align::Center).with_main_justify(true),
+                                |ui| {
+                                    if ui
+                                        .add(
+                                            TextEdit::singleline(&mut self.search_query)
+                                                .hint_text("\u{1F50D} Preset name"),
+                                        )
+                                        .changed()
+                                    {
+                                        self.resort_preset_headers();
+                                    }
+                                },
+                            );
+                        });
+                        header.col(|ui| {
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                ui.add_enabled_ui(!self.search_query.is_empty(), |ui| {
+                                    if ui
+                                        .button("\u{1F5D9}")
+                                        .on_hover_text("\u{1F5D9} Clear search query")
+                                        .clicked()
+                                    {
+                                        self.search_query.clear();
+                                        self.resort_preset_headers();
+                                    }
                                 });
                             });
-                            row.col(|ui| {
-                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                    ui.monospace((preset_header.preset() + 1).to_string());
+                        });
+                    })
+                    .body(|mut body| {
+                        for (preset_header, matches_search) in &self.sf2_sorted_preset_headers {
+                            body.row(20.0, |mut row| {
+                                row.col(|ui| {
+                                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                        ui.monospace(preset_header.bank().to_string())
+                                    });
                                 });
-                            });
-                            row.col(|ui| {
-                                ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                    let preset_symbol =
-                                        if [120, 127, 128].contains(&preset_header.bank()) {
-                                            "\u{1F941}"
+                                row.col(|ui| {
+                                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                        ui.monospace((preset_header.preset() + 1).to_string());
+                                    });
+                                });
+                                row.col(|ui| {
+                                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                                        let preset_symbol =
+                                            if [120, 127, 128].contains(&preset_header.bank()) {
+                                                "\u{1F941}"
+                                            } else {
+                                                "\u{1F3B9}"
+                                            };
+
+                                        if *matches_search {
+                                            ui.strong(format!(
+                                                "{preset_symbol:} {preset_name:}",
+                                                preset_name = preset_header.preset_name().unwrap()
+                                            ));
                                         } else {
-                                            "\u{1F3B9}"
-                                        };
-
-                                    if *matches_search {
-                                        ui.strong(format!(
-                                            "{preset_symbol:} {preset_name:}",
-                                            preset_name = preset_header.preset_name().unwrap()
-                                        ));
-                                    } else {
-                                        ui.label(format!(
-                                            "{preset_symbol:} {preset_name:}",
-                                            preset_name = preset_header.preset_name().unwrap()
-                                        ));
-                                    }
+                                            ui.label(format!(
+                                                "{preset_symbol:} {preset_name:}",
+                                                preset_name = preset_header.preset_name().unwrap()
+                                            ));
+                                        }
+                                    });
+                                });
+                                row.col(|ui| {
+                                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                        if ui.button("\u{23F5}").clicked() {
+                                            // TODO
+                                        }
+                                    });
                                 });
                             });
-                            row.col(|ui| {
-                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                    if ui.button("\u{23F5}").clicked() {
-                                        // TODO
-                                    }
-                                });
-                            });
-                        });
-                    }
+                        }
+                    });
+            } else {
+                ui.with_layout(Layout::top_down(Align::Center), |ui| {
+                    ui.scope(|ui| {
+                        ui.style_mut()
+                            .text_styles
+                            .get_mut(&TextStyle::Body)
+                            .unwrap()
+                            .size = 100.0;
+                        ui.label("\u{2B8B}");
+                    });
+                    ui.heading("Drop files to open here");
+                    ui.label("or pass them as command-line arguments.")
                 });
+            }
         });
 
         show_about_window!(ctx, &mut self.about_window_open);
