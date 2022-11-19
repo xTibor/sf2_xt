@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::path::Path;
+use std::process::{Command, Stdio};
 use std::{env, mem};
 
 use eframe::egui::{
@@ -35,6 +36,15 @@ impl<'a> Sf2GuiApp<'a> {
             sf2_soundfont: None,
             sf2_sorted_preset_headers: Vec::new(),
         }
+    }
+
+    pub fn new_window(&self) {
+        Command::new(env::args().nth(0).unwrap())
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("Failed to create new instance");
     }
 
     pub fn load_sf2(&mut self, sf2_path: &Path) {
@@ -129,6 +139,13 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
         TopBottomPanel::top("mainmenu").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.menu_button("File", |ui| {
+                    if ui.button("New Window").clicked() {
+                        self.new_window();
+                        ui.close_menu();
+                    }
+
+                    ui.separator();
+
                     if ui.button("Exit").clicked() {
                         frame.close();
                     }
