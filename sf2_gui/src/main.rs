@@ -88,7 +88,7 @@ impl<'a> Sf2GuiApp<'a> {
                             true
                         };
 
-                        any_field_present & bank_matches && preset_matches
+                        any_field_present && bank_matches && preset_matches
                     } else {
                         let matches_preset_name = preset_header
                             .preset_name()
@@ -301,7 +301,9 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                             });
                             row.col(|ui| {
                                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                    let _ = ui.button("\u{23F5}");
+                                    if ui.button("\u{23F5}").clicked() {
+                                        // TODO
+                                    }
                                 });
                             });
                         });
