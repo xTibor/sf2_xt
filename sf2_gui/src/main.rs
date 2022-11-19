@@ -8,6 +8,7 @@ use eframe::egui::{
 };
 use eframe::emath::{vec2, Align};
 use egui_extras::{Size, TableBuilder};
+use itertools::Itertools;
 use memmap::{Mmap, MmapOptions};
 
 use egui_extras_xt::show_about_window;
@@ -17,6 +18,7 @@ struct Sf2GuiApp<'a> {
     search_query: String,
     about_window_open: bool,
     request_scrollback: bool,
+    preset_header_sort_map: Vec<(usize, bool)>,
 
     sf2_mmap: Option<Mmap>,
     sf2_soundfont: Option<Sf2Soundfont<'a>>,
@@ -28,6 +30,7 @@ impl<'a> Sf2GuiApp<'a> {
             search_query: "".to_owned(),
             about_window_open: false,
             request_scrollback: false,
+            preset_header_sort_map: Vec::new(),
 
             sf2_mmap: None,
             sf2_soundfont: None,
@@ -50,6 +53,21 @@ impl<'a> Sf2GuiApp<'a> {
         });
 
         self.request_scrollback = true;
+        self.regenerate_sort_map();
+    }
+
+    pub fn regenerate_sort_map(&mut self) {
+        println!("RESORTED");
+        self.preset_header_sort_map = self
+            .sf2_soundfont
+            .as_ref()
+            .unwrap()
+            .preset_headers()
+            .unwrap()
+            .enumerate()
+            .sorted_by_key(|(index, preset_header)| preset_header.bank_preset())
+            .map(|(index, _)| (index, false))
+            .collect::<Vec<_>>();
     }
 }
 
@@ -188,6 +206,7 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                                     .changed()
                                 {
                                     self.request_scrollback = true;
+                                    self.regenerate_sort_map();
                                 }
                             },
                         );
@@ -202,6 +221,7 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                                 {
                                     self.search_query.clear();
                                     self.request_scrollback = true;
+                                    self.regenerate_sort_map();
                                 }
                             });
                         });
@@ -209,32 +229,15 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                 })
                 .body(|mut body| {
                     if let Some(sf2_soundfont) = &self.sf2_soundfont {
-                        for preset_header in sf2_soundfont.preset_headers().unwrap()
-                        /*
-                        .map(|((bank, preset), preset_name)| {
-                            let matches_search = if self.search_query.is_empty() {
-                                false
-                            } else {
-                                let preset_name_match = preset_name
-                                    .to_lowercase()
-                                    .contains(&self.search_query.to_lowercase());
+                        let preset_headers =
+                            sf2_soundfont.preset_headers().unwrap().collect::<Vec<_>>();
 
-                                let bank_preset_match = if self.search_query.contains(':')
-                                    && self.search_query.len() > 1
-                                {
-                                    format!("{}:{}", bank, preset + 1).contains(&self.search_query)
-                                } else {
-                                    false
-                                };
-
-                                preset_name_match || bank_preset_match
-                            };
-
-                            ((bank, preset), preset_name, matches_search)
-                        })
-                        .sorted_by_key(|((bank, preset), _, matches_search)| {
-                            (!*matches_search, (*bank, *preset))
-                        })*/
+                        for (preset_header, matches_search) in self
+                            .preset_header_sort_map
+                            .iter()
+                            .map(|(index, matches_search)| {
+                                (&preset_headers[*index], matches_search)
+                            })
                         {
                             body.row(20.0, |mut row| {
                                 row.col(|ui| {
@@ -256,14 +259,17 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                                                 "\u{1F3B9}"
                                             };
 
-                                        //if matches_search {
-                                        //    ui.strong(format!("{preset_symbol:} {preset_name:}"));
-                                        //} else {
-                                        ui.label(format!(
-                                            "{preset_symbol:} {preset_name:}",
-                                            preset_name = preset_header.preset_name().unwrap()
-                                        ));
-                                        //}
+                                        if *matches_search {
+                                            ui.strong(format!(
+                                                "{preset_symbol:} {preset_name:}",
+                                                preset_name = preset_header.preset_name().unwrap()
+                                            ));
+                                        } else {
+                                            ui.label(format!(
+                                                "{preset_symbol:} {preset_name:}",
+                                                preset_name = preset_header.preset_name().unwrap()
+                                            ));
+                                        }
                                     });
                                 });
                                 row.col(|ui| {
