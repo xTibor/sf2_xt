@@ -2,14 +2,16 @@ use std::fs::File;
 use std::path::Path;
 use std::{env, mem};
 
-use eframe::egui::{CentralPanel, Context, Layout, TextEdit, TopBottomPanel};
+use eframe::egui::{
+    CentralPanel, CollapsingHeader, Context, Layout, ScrollArea, SidePanel, TextEdit,
+    TopBottomPanel,
+};
 use eframe::emath::{vec2, Align};
 use egui_extras::{Size, TableBuilder};
-use itertools::Itertools;
 use memmap::{Mmap, MmapOptions};
 
 use egui_extras_xt::show_about_window;
-use sf2_lib::sf2::{Sf2PresetHeader, Sf2Soundfont};
+use sf2_lib::sf2::Sf2Soundfont;
 
 struct Sf2GuiApp<'a> {
     search_query: String,
@@ -68,6 +70,38 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
             ui.horizontal(|ui| {
                 if ui.button("About").clicked() {
                     self.about_window_open = true;
+                }
+            });
+        });
+
+        SidePanel::right("info").min_width(200.0).show(ctx, |ui| {
+            ScrollArea::vertical().show(ui, |ui| {
+                if let Some(sf2_soundfont) = &self.sf2_soundfont {
+                    let sf2_info = sf2_soundfont.info().unwrap();
+
+                    if let Ok(sf2_soundfont_name) = sf2_info.soundfont_name() {
+                        CollapsingHeader::new("Soundfont name")
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                ui.label(sf2_soundfont_name);
+                            });
+                    }
+
+                    if let Ok(Some(sf2_copyright)) = sf2_info.copyright() {
+                        CollapsingHeader::new("Copyright")
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                ui.label(sf2_copyright);
+                            });
+                    }
+
+                    if let Ok(Some(sf2_comment)) = sf2_info.comment() {
+                        CollapsingHeader::new("Comment")
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                ui.label(sf2_comment);
+                            });
+                    }
                 }
             });
         });
@@ -209,7 +243,7 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
 
 fn main() {
     let options = eframe::NativeOptions {
-        initial_window_size: Some(vec2(300.0, 600.0)),
+        initial_window_size: Some(vec2(500.0, 600.0)),
         drag_and_drop_support: true,
         ..Default::default()
     };
