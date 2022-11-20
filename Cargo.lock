@@ -1341,16 +1341,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "sf2_cli"
+name = "sf2_xt_cli"
 version = "0.1.0"
 dependencies = [
  "itertools",
  "memmap",
- "sf2_lib",
+ "sf2_xt_lib",
 ]
 
 [[package]]
-name = "sf2_gui"
+name = "sf2_xt_gui"
 version = "0.1.0"
 dependencies = [
  "eframe",
@@ -1358,12 +1358,12 @@ dependencies = [
  "egui_extras_xt",
  "itertools",
  "memmap",
- "sf2_lib",
+ "sf2_xt_lib",
  "strum",
 ]
 
 [[package]]
-name = "sf2_lib"
+name = "sf2_xt_lib"
 version = "0.1.0"
 dependencies = [
  "zerocopy",

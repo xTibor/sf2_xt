@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "sf2_cli",
-    "sf2_lib",
-    "sf2_gui",
+    "sf2_xt_cli",
+    "sf2_xt_gui",
+    "sf2_xt_lib",
 ]

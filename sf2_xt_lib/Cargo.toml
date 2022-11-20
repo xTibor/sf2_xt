@@ -1,8 +1,8 @@
 [package]
-name = "sf2_cli"
+name = "sf2_xt_lib"
 version = "0.1.0"
 authors = ["Nagy Tibor <xnagytibor@protonmail.com>"]
-description = "Command-line tools for SoundFont files"
+description = "A zero-copy SoundFont parser library"
 license = "MIT"
 edition = "2021"
 repository = "https://github.com/xTibor/sf2_xt"
@@ -10,7 +10,4 @@ homepage = "https://github.com/xTibor/sf2_xt"
 publish = false
 
 [dependencies]
-sf2_lib = { path = "../sf2_lib" }
-
-itertools = "0.10.5"
-memmap = "0.7.0"
+zerocopy = "0.6.1"

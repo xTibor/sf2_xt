@@ -19,7 +19,7 @@ use egui_extras_xt::show_about_window;
 use egui_extras_xt::ui::hyperlink_with_icon::HyperlinkWithIcon;
 use egui_extras_xt::ui::widgets_from::WidgetsFromIterator;
 
-use sf2_lib::sf2::{Sf2PresetHeader, Sf2SoundFont};
+use sf2_xt_lib::sf2::{Sf2PresetHeader, Sf2SoundFont};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -562,7 +562,7 @@ fn main() {
     };
 
     eframe::run_native(
-        "sf2_gui",
+        "sf2_xt_gui",
         options,
         Box::new(|_| {
             let mut app = Sf2GuiApp::new();
