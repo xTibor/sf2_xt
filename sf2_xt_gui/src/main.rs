@@ -60,7 +60,8 @@ impl PresetSortOrder {
                 .preset_name()
                 .unwrap()
                 .trim()
-                .cmp(preset_header_b.preset_name().unwrap().trim()),
+                .to_lowercase()
+                .cmp(&preset_header_b.preset_name().unwrap().trim().to_lowercase()),
 
             PresetSortOrder::BankPreset => preset_header_a
                 .bank_preset()
