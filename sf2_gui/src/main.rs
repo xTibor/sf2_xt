@@ -60,7 +60,7 @@ impl PresetSortOrder {
                 .preset_name()
                 .unwrap()
                 .trim()
-                .cmp(&preset_header_b.preset_name().unwrap().trim()),
+                .cmp(preset_header_b.preset_name().unwrap().trim()),
 
             PresetSortOrder::BankPreset => preset_header_a
                 .bank_preset()
@@ -117,7 +117,7 @@ impl<'a> Sf2GuiApp<'a> {
     }
 
     pub fn new_window(&self) {
-        Command::new(env::args().nth(0).unwrap())
+        Command::new(env::args().next().unwrap())
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -136,7 +136,7 @@ impl<'a> Sf2GuiApp<'a> {
 
         self.sf2_soundfont = Some(unsafe {
             let sf2_mmap_transmuted_lifetime =
-                mem::transmute::<&[u8], &[u8]>(&self.sf2_mmap.as_ref().unwrap());
+                mem::transmute::<&[u8], &[u8]>(self.sf2_mmap.as_ref().unwrap());
             Sf2SoundFont::new(sf2_mmap_transmuted_lifetime).unwrap()
         });
 

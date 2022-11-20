@@ -56,14 +56,14 @@ impl From<RiffError> for Sf2Error {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-fn str_from_zstr<'a>(data: &'a [u8]) -> Sf2Result<&'a str> {
-    Ok(CStr::from_bytes_until_nul(data)
+fn str_from_zstr(data: &[u8]) -> Sf2Result<&str> {
+    CStr::from_bytes_until_nul(data)
         .map_err(|_| Sf2Error::MalformedZstr)?
         .to_str()
-        .map_err(|_| Sf2Error::MalformedZstr)?)
+        .map_err(|_| Sf2Error::MalformedZstr)
 }
 
-fn str_from_fixedstr<'a>(data: &'a [u8]) -> Sf2Result<&'a str> {
+fn str_from_fixedstr(data: &[u8]) -> Sf2Result<&str> {
     // Fixed-length strings may contain garbage after the zero-terminator that may
     // cause issues with the string conversion. (GeneralUser GS)
     let terminator_pos = data.iter().position(|&b| b == b'\0').unwrap_or(data.len());
