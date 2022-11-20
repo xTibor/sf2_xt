@@ -9,6 +9,7 @@ use eframe::egui::{
 };
 use eframe::emath::{vec2, Align};
 use egui_extras::{Size, TableBuilder};
+use egui_extras_xt::ui::hyperlink_with_icon::HyperlinkWithIcon;
 use itertools::Itertools;
 use memmap::{Mmap, MmapOptions};
 
@@ -166,59 +167,121 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                         ui: &mut Ui,
                         section_name: &str,
                         default_open: bool,
-                        section_contents: &str,
+                        add_contents: impl FnOnce(&mut Ui),
                     ) {
-                        if !section_contents.trim().is_empty() {
-                            CollapsingHeader::new(section_name)
-                                .default_open(default_open)
-                                .show(ui, |ui| {
-                                    ui.label(section_contents);
-                                });
-                        }
+                        CollapsingHeader::new(section_name)
+                            .default_open(default_open)
+                            .show(ui, add_contents);
                     }
 
                     if let Ok(soundfont_name) = sf2_info.soundfont_name() {
-                        add_section(ui, "SoundFont name", true, soundfont_name);
+                        if !soundfont_name.trim().is_empty() {
+                            add_section(ui, "SoundFont name", true, |ui| {
+                                ui.label(soundfont_name);
+                            });
+                        }
                     }
 
                     if let Ok(Some(author)) = sf2_info.author() {
-                        add_section(ui, "Author", true, author);
+                        if !author.trim().is_empty() {
+                            add_section(ui, "Author", true, |ui| {
+                                ui.label(author);
+                            });
+                        }
                     }
 
                     if let Ok(Some(copyright)) = sf2_info.copyright() {
-                        add_section(ui, "Copyright", true, copyright);
+                        if !copyright.trim().is_empty() {
+                            add_section(ui, "Copyright", true, |ui| {
+                                ui.label(copyright);
+                            });
+                        }
                     }
 
                     if let Ok(Some(comment)) = sf2_info.comment() {
-                        add_section(ui, "Comment", true, comment);
+                        if !comment.trim().is_empty() {
+                            add_section(ui, "Comment", true, |ui| {
+                                ui.label(comment);
+                            });
+                        }
                     }
 
                     if let Ok((major, minor)) = sf2_info.format_version() {
-                        add_section(ui, "Format version", true, &format!("{major:}.{minor:02}"));
+                        add_section(ui, "Format version", true, |ui| {
+                            ui.label(&format!("{major:}.{minor:02}"));
+                        });
                     }
 
                     if let Ok(sound_engine) = sf2_info.sound_engine() {
-                        add_section(ui, "Sound engine", true, sound_engine);
+                        if !sound_engine.trim().is_empty() {
+                            add_section(ui, "Sound engine", true, |ui| {
+                                ui.label(sound_engine);
+                            });
+                        }
                     }
 
                     if let Ok(Some(rom_name)) = sf2_info.rom_name() {
-                        add_section(ui, "ROM name", true, rom_name);
+                        if !rom_name.trim().is_empty() {
+                            add_section(ui, "ROM name", true, |ui| {
+                                ui.label(rom_name);
+                            });
+                        }
                     }
 
                     if let Ok(Some((major, minor))) = sf2_info.rom_version() {
-                        add_section(ui, "ROM version", true, &format!("{major:}.{minor:02}"));
+                        add_section(ui, "ROM version", true, |ui| {
+                            ui.label(&format!("{major:}.{minor:02}"));
+                        });
                     }
 
                     if let Ok(Some(date)) = sf2_info.date() {
-                        add_section(ui, "Date", true, date);
+                        if !date.trim().is_empty() {
+                            add_section(ui, "Date", true, |ui| {
+                                ui.label(date);
+                            });
+                        }
                     }
 
                     if let Ok(Some(product)) = sf2_info.product() {
-                        add_section(ui, "Product", true, product);
+                        if !product.trim().is_empty() {
+                            add_section(ui, "Product", true, |ui| {
+                                ui.label(product);
+                            });
+                        }
                     }
 
                     if let Ok(Some(soundfont_tools)) = sf2_info.soundfont_tools() {
-                        add_section(ui, "SoundFont tools", true, &soundfont_tools.join(", "));
+                        if !soundfont_tools.is_empty() {
+                            add_section(ui, "SoundFont tools", true, |ui| {
+                                #[rustfmt::skip]
+                                pub const SOUNDFONT_TOOLS_URLS: &[(&str, &str)] = &[
+                                    ("Polyphone",       "https://www.polyphone-soundfonts.com"    ),
+                                    ("SynthFont Viena", "https://www.synthfont.com"               ),
+                                    ("CDXtract",        "https://www.soundlib.com/cdxtract/"      ),
+                                    ("Awave Studio",    "https://www.fmjsoft.com/awavestudio.html"),
+                                    ("SWAMI",           "http://www.swamiproject.org"             ),
+                                    ("libInstPatch",    "http://www.swamiproject.org"             ),
+                                    //("SFEDT",           "???"                                     ),
+                                ];
+
+                                for &soundfont_tool in soundfont_tools.iter().unique() {
+                                    if let Some(&(_, soundfont_tool_url)) =
+                                        SOUNDFONT_TOOLS_URLS.iter().find(|(name, _)| {
+                                            soundfont_tool
+                                                .to_lowercase()
+                                                .starts_with(&name.to_lowercase())
+                                        })
+                                    {
+                                        ui.hyperlink_with_icon_to(
+                                            soundfont_tool,
+                                            soundfont_tool_url,
+                                        );
+                                    } else {
+                                        ui.label(format!("\u{1F6E0} {soundfont_tool:}"));
+                                    }
+                                }
+                            });
+                        }
                     }
                 }
             });
