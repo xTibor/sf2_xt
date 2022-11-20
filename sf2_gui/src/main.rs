@@ -483,6 +483,28 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                                                             preset_header.preset_name().unwrap()
                                                     ));
                                                 }
+
+                                                if let Some(sorting_key_value) = match self
+                                                    .preset_sort_order
+                                                {
+                                                    PresetSortOrder::None => None,
+                                                    PresetSortOrder::Name => None,
+                                                    PresetSortOrder::BankPreset => None,
+                                                    PresetSortOrder::PresetBagIndex => Some(
+                                                        preset_header.preset_bag_index.to_string(),
+                                                    ),
+                                                    PresetSortOrder::Library => {
+                                                        Some(preset_header.library.to_string())
+                                                    }
+                                                    PresetSortOrder::Genre => {
+                                                        Some(preset_header.genre.to_string())
+                                                    }
+                                                    PresetSortOrder::Morphology => {
+                                                        Some(preset_header.morphology.to_string())
+                                                    }
+                                                } {
+                                                    ui.weak(format!("({})", sorting_key_value));
+                                                }
                                             },
                                         );
                                     });
