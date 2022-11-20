@@ -1,7 +1,13 @@
 [package]
 name = "sf2_gui"
 version = "0.1.0"
+authors = ["Nagy Tibor <xnagytibor@protonmail.com>"]
+description = "SoundFont browser application"
+license = "MIT"
 edition = "2021"
+repository = "https://github.com/xTibor/sf2_xt"
+homepage = "https://github.com/xTibor/sf2_xt"
+publish = false
 
 [dependencies]
 sf2_lib = { path = "../sf2_lib" }
