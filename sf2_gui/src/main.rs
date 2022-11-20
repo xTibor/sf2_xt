@@ -57,8 +57,10 @@ impl PresetSortOrder {
             PresetSortOrder::None => Ordering::Equal,
 
             PresetSortOrder::Name => preset_header_a
-                .preset_name
-                .cmp(&preset_header_b.preset_name),
+                .preset_name()
+                .unwrap()
+                .trim()
+                .cmp(&preset_header_b.preset_name().unwrap().trim()),
 
             PresetSortOrder::BankPreset => preset_header_a
                 .bank_preset()
@@ -470,17 +472,16 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                                                     "\u{1F3B9}"
                                                 };
 
+                                                let preset_name =
+                                                    preset_header.preset_name().unwrap().trim();
+
                                                 if *matches_search {
                                                     ui.strong(format!(
-                                                        "{preset_symbol:} {preset_name:}",
-                                                        preset_name =
-                                                            preset_header.preset_name().unwrap()
+                                                        "{preset_symbol:} {preset_name:}"
                                                     ));
                                                 } else {
                                                     ui.label(format!(
-                                                        "{preset_symbol:} {preset_name:}",
-                                                        preset_name =
-                                                            preset_header.preset_name().unwrap()
+                                                        "{preset_symbol:} {preset_name:}"
                                                     ));
                                                 }
 
