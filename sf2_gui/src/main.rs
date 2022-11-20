@@ -33,6 +33,18 @@ enum PresetSortOrder {
 
     #[strum(to_string = "Bank and preset")]
     BankPreset,
+
+    #[strum(to_string = "Preset bag index")]
+    PresetBagIndex,
+
+    #[strum(to_string = "Library")]
+    Library,
+
+    #[strum(to_string = "Genre")]
+    Genre,
+
+    #[strum(to_string = "Morphology")]
+    Morphology,
 }
 
 impl PresetSortOrder {
@@ -43,12 +55,34 @@ impl PresetSortOrder {
     ) -> Ordering {
         match self {
             PresetSortOrder::None => Ordering::Equal,
+
             PresetSortOrder::Name => preset_header_a
                 .preset_name
                 .cmp(&preset_header_b.preset_name),
+
             PresetSortOrder::BankPreset => preset_header_a
                 .bank_preset()
                 .cmp(&preset_header_b.bank_preset()),
+
+            PresetSortOrder::PresetBagIndex => preset_header_a
+                .preset_bag_index
+                .get()
+                .cmp(&preset_header_b.preset_bag_index.get()),
+
+            PresetSortOrder::Library => preset_header_a
+                .library
+                .get()
+                .cmp(&preset_header_b.library.get()),
+
+            PresetSortOrder::Genre => preset_header_a
+                .genre
+                .get()
+                .cmp(&preset_header_b.genre.get()),
+
+            PresetSortOrder::Morphology => preset_header_a
+                .morphology
+                .get()
+                .cmp(&preset_header_b.morphology.get()),
         }
     }
 }
