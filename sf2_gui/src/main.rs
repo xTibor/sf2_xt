@@ -25,6 +25,9 @@ use sf2_lib::sf2::{Sf2PresetHeader, Sf2SoundFont};
 
 #[derive(Copy, Clone, PartialEq, EnumIter, Display)]
 enum PresetSortOrder {
+    #[strum(to_string = "None")]
+    None,
+
     #[strum(to_string = "Name")]
     Name,
 
@@ -39,6 +42,7 @@ impl PresetSortOrder {
         preset_header_b: &Sf2PresetHeader,
     ) -> Ordering {
         match self {
+            PresetSortOrder::None => Ordering::Equal,
             PresetSortOrder::Name => preset_header_a
                 .preset_name
                 .cmp(&preset_header_b.preset_name),
@@ -148,8 +152,10 @@ impl<'a> Sf2GuiApp<'a> {
 
                     (preset_header, matches_search)
                 })
+                .enumerate()
                 .sorted_by(
-                    |(preset_header_a, matches_search_a), (preset_header_b, matches_search_b)| {
+                    |(preset_index_a, (preset_header_a, matches_search_a)),
+                     (preset_index_b, (preset_header_b, matches_search_b))| {
                         let matches_search_ordering =
                             matches_search_a.cmp(matches_search_b).reverse();
 
@@ -157,9 +163,14 @@ impl<'a> Sf2GuiApp<'a> {
                             .preset_sort_order
                             .cmp_preset_headers(preset_header_a, preset_header_b);
 
-                        matches_search_ordering.then(preset_header_ordering)
+                        let preset_index_ordering = preset_index_a.cmp(preset_index_b);
+
+                        matches_search_ordering
+                            .then(preset_header_ordering)
+                            .then(preset_index_ordering)
                     },
                 )
+                .map(|(_, (preset_header, matches_search))| (preset_header, matches_search))
                 .collect::<Vec<_>>();
             self.request_scrollback = true;
         } else {
