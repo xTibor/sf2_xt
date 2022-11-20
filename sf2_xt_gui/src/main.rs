@@ -117,8 +117,14 @@ impl<'a> Sf2GuiApp<'a> {
         }
     }
 
-    pub fn new_window(&self) {
-        Command::new(env::args().next().unwrap())
+    pub fn new_window(&self, sf2_path: Option<&Path>) {
+        let mut command = Command::new(env::current_exe().unwrap());
+
+        if let Some(sf2_path) = sf2_path {
+            command.arg(sf2_path);
+        }
+
+        command
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -219,15 +225,16 @@ impl<'a> Sf2GuiApp<'a> {
 
 impl<'a> eframe::App for Sf2GuiApp<'a> {
     fn update(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
-        if !ctx.input().raw.dropped_files.is_empty() {
-            if let Some(sf2_path) = ctx
-                .input()
-                .raw
-                .dropped_files
-                .first()
-                .and_then(|f| f.path.as_ref())
-            {
-                self.load_sf2(sf2_path);
+        {
+            let input = ctx.input();
+            if !input.raw.dropped_files.is_empty() {
+                let (first, rest) = input.raw.dropped_files.split_first().unwrap();
+
+                self.load_sf2(first.path.as_ref().unwrap());
+
+                for dropped_file in rest {
+                    self.new_window(Some(dropped_file.path.as_ref().unwrap()))
+                }
             }
         }
 
@@ -235,7 +242,7 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
             ui.horizontal(|ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("New Window").clicked() {
-                        self.new_window();
+                        self.new_window(None);
                         ui.close_menu();
                     }
 
