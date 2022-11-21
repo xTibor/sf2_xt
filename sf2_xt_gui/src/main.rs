@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
+use std::ffi::{OsStr, OsString};
 use std::fs::File;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::{env, mem};
 
@@ -16,6 +17,7 @@ use eframe::emath::{vec2, Align};
 use egui_extras::{Size, TableBuilder};
 
 use egui_extras_xt::show_about_window;
+use egui_extras_xt::ui::directory_tree_view::DirectoryTreeView;
 use egui_extras_xt::ui::hyperlink_with_icon::HyperlinkWithIcon;
 use egui_extras_xt::ui::widgets_from::WidgetsFromIterator;
 
@@ -98,6 +100,9 @@ struct Sf2GuiApp<'a> {
     request_scrollback: bool,
     preset_sort_order: PresetSortOrder,
 
+    file_browser_root: PathBuf,
+    file_browser_path: Option<PathBuf>,
+
     sf2_mmap: Option<Mmap>,
     sf2_soundfont: Option<Sf2SoundFont<'a>>,
     sf2_sorted_preset_headers: Vec<(Sf2PresetHeader, bool)>,
@@ -110,6 +115,9 @@ impl<'a> Sf2GuiApp<'a> {
             about_window_open: false,
             request_scrollback: false,
             preset_sort_order: PresetSortOrder::BankPreset,
+
+            file_browser_root: env::current_dir().unwrap(),
+            file_browser_path: None,
 
             sf2_mmap: None,
             sf2_soundfont: None,
@@ -146,6 +154,8 @@ impl<'a> Sf2GuiApp<'a> {
                 mem::transmute::<&[u8], &[u8]>(self.sf2_mmap.as_ref().unwrap());
             Sf2SoundFont::new(sf2_mmap_transmuted_lifetime).unwrap()
         });
+
+        self.file_browser_path = Some(sf2_path.to_owned());
 
         self.resort_preset_headers();
     }
@@ -258,6 +268,29 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                 }
             });
         });
+
+        SidePanel::left("file_browser")
+            .min_width(150.0)
+            .show(ctx, |ui| {
+                if ui
+                    .directory_tree_view(
+                        &mut self.file_browser_path,
+                        &self.file_browser_root,
+                        None,
+                        Some(Box::new(|path| {
+                            path.extension()
+                                .and_then(OsStr::to_str)
+                                .map(str::to_lowercase)
+                                == Some("sf2".to_owned())
+                        })),
+                    )
+                    .changed()
+                {
+                    if let Some(file_browser_path) = self.file_browser_path.clone() {
+                        self.load_sf2(file_browser_path.as_path());
+                    }
+                }
+            });
 
         SidePanel::right("info").min_width(200.0).show(ctx, |ui| {
             ScrollArea::vertical().show(ui, |ui| {
@@ -564,7 +597,7 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
 
 fn main() {
     let options = eframe::NativeOptions {
-        initial_window_size: Some(vec2(500.0, 600.0)),
+        initial_window_size: Some(vec2(800.0, 600.0)),
         drag_and_drop_support: true,
         ..Default::default()
     };
