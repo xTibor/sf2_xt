@@ -100,6 +100,7 @@ struct Sf2GuiApp<'a> {
     about_window_open: bool,
     request_scrollback: bool,
     preset_sort_order: PresetSortOrder,
+    force_selected_open: bool,
 
     file_browser_root: PathBuf,
     file_browser_path: Option<PathBuf>,
@@ -116,6 +117,7 @@ impl<'a> Sf2GuiApp<'a> {
             about_window_open: false,
             request_scrollback: false,
             preset_sort_order: PresetSortOrder::BankPreset,
+            force_selected_open: false,
 
             file_browser_root: env::current_dir().unwrap(),
             file_browser_path: None,
@@ -177,6 +179,7 @@ impl<'a> Sf2GuiApp<'a> {
         }
 
         self.file_browser_path = Some(file_path.to_owned());
+        self.force_selected_open = true;
 
         self.resort_preset_headers();
     }
@@ -312,6 +315,7 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                                 .map(str::to_lowercase)
                                 == Some("sf2".to_owned())
                         })),
+                        self.force_selected_open,
                     )
                     .changed()
                 {
@@ -319,6 +323,8 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                         self.load_file(file_browser_path.as_path());
                     }
                 }
+                // Only forcing the current selected tree node to be open just for a frame
+                self.force_selected_open = false;
             });
 
         SidePanel::right("info").min_width(200.0).show(ctx, |ui| {
