@@ -1,8 +1,9 @@
 use std::cmp::Ordering;
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::str::FromStr;
 use std::{env, mem};
 
 use itertools::Itertools;
@@ -125,11 +126,11 @@ impl<'a> Sf2GuiApp<'a> {
         }
     }
 
-    pub fn new_window(&self, sf2_path: Option<&Path>) {
+    pub fn new_window(&self, path: Option<&Path>) {
         let mut command = Command::new(env::current_exe().unwrap());
 
-        if let Some(sf2_path) = sf2_path {
-            command.arg(sf2_path);
+        if let Some(path) = path {
+            command.arg(path);
         }
 
         command
@@ -140,8 +141,24 @@ impl<'a> Sf2GuiApp<'a> {
             .expect("Failed to create new instance");
     }
 
-    pub fn load_sf2(&mut self, sf2_path: &Path) {
-        let sf2_file = File::open(sf2_path).expect("Failed to open input file");
+    pub fn load_path_list<P: AsRef<Path>>(&mut self, paths: &[P]) {
+        if !paths.is_empty() {
+            let (first_path, rest_of_paths) = paths.split_first().unwrap();
+
+            if first_path.as_ref().is_dir() {
+                self.load_directory(first_path.as_ref());
+            } else {
+                self.load_file(first_path.as_ref())
+            }
+
+            for path in rest_of_paths {
+                self.new_window(Some(path.as_ref()))
+            }
+        }
+    }
+
+    pub fn load_file(&mut self, file_path: &Path) {
+        let sf2_file = File::open(file_path).expect("Failed to open input file");
 
         self.sf2_mmap = Some(unsafe {
             MmapOptions::new()
@@ -155,9 +172,21 @@ impl<'a> Sf2GuiApp<'a> {
             Sf2SoundFont::new(sf2_mmap_transmuted_lifetime).unwrap()
         });
 
-        self.file_browser_path = Some(sf2_path.to_owned());
+        if !file_path.starts_with(&self.file_browser_root) {
+            self.file_browser_root = file_path.parent().unwrap().to_owned();
+        }
+
+        self.file_browser_path = Some(file_path.to_owned());
 
         self.resort_preset_headers();
+    }
+
+    pub fn load_directory(&mut self, directory_path: &Path) {
+        self.sf2_mmap = None;
+        self.sf2_soundfont = None;
+
+        self.file_browser_root = directory_path.to_path_buf();
+        self.file_browser_path = None;
     }
 
     pub fn resort_preset_headers(&mut self) {
@@ -237,15 +266,15 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
     fn update(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
         {
             let input = ctx.input();
-            if !input.raw.dropped_files.is_empty() {
-                let (first, rest) = input.raw.dropped_files.split_first().unwrap();
+            let paths = input
+                .raw
+                .dropped_files
+                .iter()
+                .map(|df| &df.path)
+                .flatten()
+                .collect_vec();
 
-                self.load_sf2(first.path.as_ref().unwrap());
-
-                for dropped_file in rest {
-                    self.new_window(Some(dropped_file.path.as_ref().unwrap()))
-                }
-            }
+            self.load_path_list(&paths);
         }
 
         TopBottomPanel::top("mainmenu").show(ctx, |ui| {
@@ -287,7 +316,7 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                     .changed()
                 {
                     if let Some(file_browser_path) = self.file_browser_path.clone() {
-                        self.load_sf2(file_browser_path.as_path());
+                        self.load_file(file_browser_path.as_path());
                     }
                 }
             });
@@ -608,9 +637,12 @@ fn main() {
         Box::new(|_| {
             let mut app = Sf2GuiApp::new();
 
-            if let Some(sf2_path) = env::args().nth(1) {
-                app.load_sf2(Path::new(&sf2_path))
-            }
+            let paths = env::args()
+                .skip(1)
+                .map(|s| PathBuf::from_str(&s))
+                .flatten()
+                .collect_vec();
+            app.load_path_list(&paths);
 
             Box::new(app)
         }),
