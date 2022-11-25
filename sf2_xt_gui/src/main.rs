@@ -1,5 +1,4 @@
 use std::cmp::Ordering;
-use std::ffi::OsStr;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -18,7 +17,7 @@ use eframe::emath::{vec2, Align};
 use egui_extras::{Size, TableBuilder};
 
 use egui_extras_xt::show_about_window;
-use egui_extras_xt::ui::directory_tree_view::DirectoryTreeView;
+use egui_extras_xt::ui::directory_tree_view::DirectoryTreeViewWidget;
 use egui_extras_xt::ui::hyperlink_with_icon::HyperlinkWithIcon;
 use egui_extras_xt::ui::widgets_from::WidgetsFromIterator;
 
@@ -305,17 +304,14 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
             .min_width(150.0)
             .show(ctx, |ui| {
                 if ui
-                    .directory_tree_view(
-                        &mut self.file_browser_path,
-                        &self.file_browser_root,
-                        None,
-                        Some(Box::new(|path| {
-                            path.extension()
-                                .and_then(OsStr::to_str)
-                                .map(str::to_lowercase)
-                                == Some("sf2".to_owned())
-                        })),
-                        self.force_selected_open,
+                    .add(
+                        DirectoryTreeViewWidget::new(
+                            &mut self.file_browser_path,
+                            &self.file_browser_root,
+                        )
+                        .file_extensions(&["sf2"])
+                        .hide_file_extensions(true)
+                        .force_selected_open(self.force_selected_open),
                     )
                     .changed()
                 {
