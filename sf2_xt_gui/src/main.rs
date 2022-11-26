@@ -272,8 +272,8 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                 .raw
                 .dropped_files
                 .iter()
-                .map(|df| &df.path)
-                .flatten()
+                .flat_map(|df| &df.path)
+                .flat_map(|path| path.canonicalize())
                 .collect_vec();
 
             self.load_path_list(&paths);
@@ -641,8 +641,8 @@ fn main() {
 
             let paths = env::args()
                 .skip(1)
-                .map(|s| PathBuf::from_str(&s))
-                .flatten()
+                .flat_map(|s| PathBuf::from_str(&s))
+                .flat_map(|path| path.canonicalize())
                 .collect_vec();
             app.load_path_list(&paths);
 
