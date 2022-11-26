@@ -450,7 +450,7 @@ dependencies = [
 [[package]]
 name = "egui_extras_xt"
 version = "0.1.0"
-source = "git+https://github.com/xTibor/egui_extras_xt#8eaac5364f9dbb52cf3eb1c74dbaf351e0d1f1a8"
+source = "git+https://github.com/xTibor/egui_extras_xt#093a444cdd85e6e5bca2d1b1b1db46a398662240"
 dependencies = [
  "egui",
  "emath",
