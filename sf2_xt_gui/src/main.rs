@@ -19,7 +19,7 @@ use egui_extras::{Size, TableBuilder};
 use egui_extras_xt::show_about_window;
 use egui_extras_xt::ui::directory_tree_view::DirectoryTreeViewWidget;
 use egui_extras_xt::ui::hyperlink_with_icon::HyperlinkWithIcon;
-use egui_extras_xt::ui::widgets_from::WidgetsFromIterator;
+use egui_extras_xt::ui::widgets_from_iter::RadioValueFromIter;
 
 use sf2_xt_lib::sf2::{Sf2PresetHeader, Sf2SoundFont};
 
