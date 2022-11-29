@@ -19,6 +19,7 @@ impl<'a> Sf2SoundFont<'a> {
         Ok(Sf2SoundFont { chunk_sfbk })
     }
 
+    // TODO: pub fn preset_headers(&self) -> Sf2Result<&'a [Sf2PresetHeader]>
     pub fn preset_headers(&self) -> Sf2Result<Sf2RecordIterator<Sf2PresetHeader>> {
         let chunk_pdta = self
             .chunk_sfbk
@@ -32,6 +33,7 @@ impl<'a> Sf2SoundFont<'a> {
         Ok(Sf2RecordIterator::new(chunk_phdr.chunk_data()?))
     }
 
+    // TODO: pub fn instruments(&self) -> Sf2Result<&'a [Sf2Instrument]>
     pub fn instruments(&self) -> Sf2Result<Sf2RecordIterator<Sf2Instrument>> {
         let chunk_pdta = self
             .chunk_sfbk
@@ -45,6 +47,7 @@ impl<'a> Sf2SoundFont<'a> {
         Ok(Sf2RecordIterator::new(chunk_inst.chunk_data()?))
     }
 
+    // TODO: pub fn samples(&self) -> Sf2Result<&'a [Sf2Sample]>
     pub fn samples(&self) -> Sf2Result<Sf2RecordIterator<Sf2Sample>> {
         let chunk_pdta = self
             .chunk_sfbk

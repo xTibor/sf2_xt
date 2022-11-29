@@ -8,6 +8,14 @@ pub trait IsTerminalRecord {
     fn is_terminal_record(&self) -> bool;
 }
 
+// TODO: Remove `Sf2RecordIterator` when `zerocopy` implements slice casts:
+// - https://github.com/google/zerocopy/issues/98
+//
+// Have to ditch this iterator-based parsing approach in favor of slice casts
+// because some SF2 structures depend on subsequent items, for example
+// calculating the number of instrument zones/preset zones from the
+// wInstBagNdx/wPresetBagNdx fields. There's also the record indexing issue that
+// is much cleaner/easier to do with slices than iterators.
 pub struct Sf2RecordIterator<'a, T>
 where
     T: FromBytes + IsTerminalRecord,
