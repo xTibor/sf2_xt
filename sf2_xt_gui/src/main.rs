@@ -14,7 +14,7 @@ use eframe::egui::{
     TopBottomPanel, Ui,
 };
 use eframe::emath::{vec2, Align};
-use egui_extras::{Size, TableBuilder};
+use egui_extras::{Column, TableBuilder};
 
 use egui_extras_xt::show_about_window;
 use egui_extras_xt::ui::directory_tree_view::DirectoryTreeViewWidget;
@@ -457,14 +457,13 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                 if self.sf2_soundfont.is_some() {
                     let mut table_builder = TableBuilder::new(ui)
                         .striped(true)
-                        .column(Size::exact(20.0))
-                        .column(Size::exact(20.0))
-                        .column(Size::remainder().at_least(100.0))
-                        .column(Size::exact(20.0));
+                        .column(Column::exact(20.0))
+                        .column(Column::exact(20.0))
+                        .column(Column::remainder().at_least(100.0))
+                        .column(Column::exact(20.0));
 
                     if self.request_scrollback {
-                        // Uncomment when egui 0.20.0 releases
-                        //table_builder = table_builder.vertical_scroll_offset(0.0);
+                        table_builder = table_builder.vertical_scroll_offset(0.0);
                         self.request_scrollback = false;
                     }
 

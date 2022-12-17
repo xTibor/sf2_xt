@@ -13,8 +13,8 @@ publish = false
 sf2_xt_lib = { path = "../sf2_xt_lib" }
 egui_extras_xt = { git = "https://github.com/xTibor/egui_extras_xt", features = ["ui"] }
 
-eframe = "0.19.0"
-egui_extras = "0.19.0"
+eframe = "0.20.0"
+egui_extras = "0.20.0"
 itertools = "0.10.5"
 memmap = "0.7.0"
 strum = { version = "0.24.1", features = ["derive"] }
