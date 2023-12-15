@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 members = [
     "sf2_xt_cli",
     "sf2_xt_gui",

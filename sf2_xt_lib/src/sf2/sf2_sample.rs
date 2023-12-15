@@ -1,10 +1,10 @@
-use zerocopy::{FromBytes, Unaligned, LE, U16, U32};
+use zerocopy::{FromBytes, FromZeroes, Unaligned, LE, U16, U32};
 
 use crate::sf2::record_iterator::IsTerminalRecord;
 use crate::sf2::utils::str_from_fixedstr;
 use crate::sf2::Sf2Result;
 
-#[derive(Debug, FromBytes, Unaligned)]
+#[derive(Debug, FromZeroes, FromBytes, Unaligned)]
 #[repr(packed)]
 pub struct Sf2Sample {
     pub sample_name: [u8; 20],

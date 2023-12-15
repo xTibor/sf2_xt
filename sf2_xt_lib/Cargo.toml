@@ -10,4 +10,4 @@ homepage = "https://github.com/xTibor/sf2_xt"
 publish = false
 
 [dependencies]
-zerocopy = "0.6.1"
+zerocopy = { version = "0.7.31", features = ["derive"] }

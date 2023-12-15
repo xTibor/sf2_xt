@@ -11,13 +11,13 @@ use strum::{Display, EnumIter, IntoEnumIterator};
 
 use eframe::egui::{
     CentralPanel, CollapsingHeader, Context, Layout, ScrollArea, SidePanel, TextEdit, TextStyle,
-    TopBottomPanel, Ui,
+    TopBottomPanel, Ui, ViewportBuilder, ViewportCommand,
 };
-use eframe::emath::{vec2, Align};
+use eframe::emath::Align;
 use egui_extras::{Column, TableBuilder};
 
+use egui_extras_xt::filesystem::DirectoryTreeViewWidget;
 use egui_extras_xt::show_about_window;
-use egui_extras_xt::ui::directory_tree_view::DirectoryTreeViewWidget;
 use egui_extras_xt::ui::hyperlink_with_icon::HyperlinkWithIcon;
 use egui_extras_xt::ui::widgets_from_iter::RadioValueFromIter;
 
@@ -265,18 +265,19 @@ impl<'a> Sf2GuiApp<'a> {
 }
 
 impl<'a> eframe::App for Sf2GuiApp<'a> {
-    fn update(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         {
-            let input = ctx.input();
-            let paths = input
-                .raw
-                .dropped_files
-                .iter()
-                .flat_map(|df| &df.path)
-                .flat_map(|path| path.canonicalize())
-                .collect_vec();
+            ctx.input(|input| {
+                let paths = input
+                    .raw
+                    .dropped_files
+                    .iter()
+                    .flat_map(|df| &df.path)
+                    .flat_map(|path| path.canonicalize())
+                    .collect_vec();
 
-            self.load_path_list(&paths);
+                self.load_path_list(&paths);
+            });
         }
 
         TopBottomPanel::top("mainmenu").show(ctx, |ui| {
@@ -290,7 +291,7 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                     ui.separator();
 
                     if ui.button("Exit").clicked() {
-                        frame.close();
+                        ctx.send_viewport_cmd(ViewportCommand::Close);
                     }
                 });
 
@@ -625,10 +626,11 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
     }
 }
 
-fn main() {
+fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
-        initial_window_size: Some(vec2(800.0, 600.0)),
-        drag_and_drop_support: true,
+        viewport: ViewportBuilder::default()
+            .with_inner_size((800.0, 600.0))
+            .with_drag_and_drop(true),
         ..Default::default()
     };
 
@@ -647,5 +649,5 @@ fn main() {
 
             Box::new(app)
         }),
-    );
+    )
 }
