@@ -30,9 +30,12 @@ impl<'a> Sf2SoundFont<'a> {
             .ok_or(Sf2Error::MissingChunk("phdr"))?;
 
         let slice_phdr = Sf2PresetHeader::slice_from(chunk_phdr.chunk_data()?)
-            .ok_or(Sf2Error::MalformedChunk("phdr"))?;
+            .ok_or(Sf2Error::MalformedChunk("phdr"))?
+            .split_last()
+            .ok_or(Sf2Error::MissingTerminatorRecord("phdr"))?
+            .1;
 
-        Ok(slice_phdr) // TODO: Cut terminal record
+        Ok(slice_phdr)
     }
 
     pub fn instruments(&'a self) -> Sf2Result<&'a [Sf2Instrument]> {
@@ -46,9 +49,12 @@ impl<'a> Sf2SoundFont<'a> {
             .ok_or(Sf2Error::MissingChunk("inst"))?;
 
         let slice_inst = Sf2Instrument::slice_from(chunk_inst.chunk_data()?)
-            .ok_or(Sf2Error::MalformedChunk("inst"))?;
+            .ok_or(Sf2Error::MalformedChunk("inst"))?
+            .split_last()
+            .ok_or(Sf2Error::MissingTerminatorRecord("inst"))?
+            .1;
 
-        Ok(slice_inst) // TODO: Cut terminal record
+        Ok(slice_inst)
     }
 
     pub fn samples(&self) -> Sf2Result<&'a [Sf2Sample]> {
@@ -62,9 +68,12 @@ impl<'a> Sf2SoundFont<'a> {
             .ok_or(Sf2Error::MissingChunk("shdr"))?;
 
         let slice_shdr = Sf2Sample::slice_from(chunk_shdr.chunk_data()?)
-            .ok_or(Sf2Error::MalformedChunk("shdr"))?;
+            .ok_or(Sf2Error::MalformedChunk("shdr"))?
+            .split_last()
+            .ok_or(Sf2Error::MissingTerminatorRecord("shdr"))?
+            .1;
 
-        Ok(slice_shdr) // TODO: Cut terminal record
+        Ok(slice_shdr)
     }
 
     pub fn info(&self) -> Sf2Result<Sf2Info> {
