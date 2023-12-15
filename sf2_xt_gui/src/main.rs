@@ -517,10 +517,11 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                             });
                         })
                         .body(|mut body| {
+                            let sf2_soundfont = self.sf2_soundfont.as_ref().unwrap();
+                            let preset_headers = sf2_soundfont.preset_headers().unwrap();
+
                             for (preset_index, matches_search) in &self.sf2_sorted_preset_headers {
-                                let sf2_soundfont = self.sf2_soundfont.as_ref().unwrap();
-                                let preset_header =
-                                    &sf2_soundfont.preset_headers().unwrap()[*preset_index];
+                                let preset_header = &preset_headers[*preset_index];
 
                                 body.row(20.0, |mut row| {
                                     row.col(|ui| {
