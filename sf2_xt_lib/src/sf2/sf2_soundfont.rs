@@ -1,8 +1,8 @@
+use zerocopy::FromBytes;
+
 use crate::riff::RiffChunk;
 
-use crate::sf2::{
-    Sf2Error, Sf2Info, Sf2Instrument, Sf2PresetHeader, Sf2RecordIterator, Sf2Result, Sf2Sample,
-};
+use crate::sf2::{Sf2Error, Sf2Info, Sf2Instrument, Sf2PresetHeader, Sf2Result, Sf2Sample};
 
 pub struct Sf2SoundFont<'a> {
     chunk_sfbk: RiffChunk<'a>,
@@ -19,8 +19,7 @@ impl<'a> Sf2SoundFont<'a> {
         Ok(Sf2SoundFont { chunk_sfbk })
     }
 
-    // TODO: pub fn preset_headers(&self) -> Sf2Result<&'a [Sf2PresetHeader]>
-    pub fn preset_headers(&self) -> Sf2Result<Sf2RecordIterator<Sf2PresetHeader>> {
+    pub fn preset_headers(&'a self) -> Sf2Result<&'a [Sf2PresetHeader]> {
         let chunk_pdta = self
             .chunk_sfbk
             .subchunk("pdta")?
@@ -30,11 +29,13 @@ impl<'a> Sf2SoundFont<'a> {
             .subchunk("phdr")?
             .ok_or(Sf2Error::MissingChunk("phdr"))?;
 
-        Ok(Sf2RecordIterator::new(chunk_phdr.chunk_data()?))
+        let slice_phdr = Sf2PresetHeader::slice_from(chunk_phdr.chunk_data()?)
+            .ok_or(Sf2Error::MalformedChunk("phdr"))?;
+
+        Ok(slice_phdr) // TODO: Cut terminal record
     }
 
-    // TODO: pub fn instruments(&self) -> Sf2Result<&'a [Sf2Instrument]>
-    pub fn instruments(&self) -> Sf2Result<Sf2RecordIterator<Sf2Instrument>> {
+    pub fn instruments(&'a self) -> Sf2Result<&'a [Sf2Instrument]> {
         let chunk_pdta = self
             .chunk_sfbk
             .subchunk("pdta")?
@@ -44,11 +45,13 @@ impl<'a> Sf2SoundFont<'a> {
             .subchunk("inst")?
             .ok_or(Sf2Error::MissingChunk("inst"))?;
 
-        Ok(Sf2RecordIterator::new(chunk_inst.chunk_data()?))
+        let slice_inst = Sf2Instrument::slice_from(chunk_inst.chunk_data()?)
+            .ok_or(Sf2Error::MalformedChunk("inst"))?;
+
+        Ok(slice_inst) // TODO: Cut terminal record
     }
 
-    // TODO: pub fn samples(&self) -> Sf2Result<&'a [Sf2Sample]>
-    pub fn samples(&self) -> Sf2Result<Sf2RecordIterator<Sf2Sample>> {
+    pub fn samples(&self) -> Sf2Result<&'a [Sf2Sample]> {
         let chunk_pdta = self
             .chunk_sfbk
             .subchunk("pdta")?
@@ -58,7 +61,10 @@ impl<'a> Sf2SoundFont<'a> {
             .subchunk("shdr")?
             .ok_or(Sf2Error::MissingChunk("shdr"))?;
 
-        Ok(Sf2RecordIterator::new(chunk_shdr.chunk_data()?))
+        let slice_shdr = Sf2Sample::slice_from(chunk_shdr.chunk_data()?)
+            .ok_or(Sf2Error::MalformedChunk("shdr"))?;
+
+        Ok(slice_shdr) // TODO: Cut terminal record
     }
 
     pub fn info(&self) -> Sf2Result<Sf2Info> {

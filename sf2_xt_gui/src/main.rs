@@ -106,7 +106,7 @@ struct Sf2GuiApp<'a> {
 
     sf2_mmap: Option<Mmap>,
     sf2_soundfont: Option<Sf2SoundFont<'a>>,
-    sf2_sorted_preset_headers: Vec<(Sf2PresetHeader, bool)>,
+    sf2_sorted_preset_headers: Vec<(usize, bool)>,
 }
 
 impl<'a> Sf2GuiApp<'a> {
@@ -207,6 +207,7 @@ impl<'a> Sf2GuiApp<'a> {
             self.sf2_sorted_preset_headers = sf2_soundfont
                 .preset_headers()
                 .unwrap()
+                .iter()
                 .map(|preset_header| {
                     let matches_search = if let Some((bank, preset)) = bank_preset_query {
                         let any_field_present = bank.is_some() || preset.is_some();
@@ -254,7 +255,9 @@ impl<'a> Sf2GuiApp<'a> {
                             .then(preset_index_ordering)
                     },
                 )
-                .map(|(_, (preset_header, matches_search))| (preset_header, matches_search))
+                .map(|(preset_index, (_preset_header, matches_search))| {
+                    (preset_index, matches_search)
+                })
                 .collect::<Vec<_>>();
             self.request_scrollback = true;
         } else {
@@ -514,7 +517,11 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                             });
                         })
                         .body(|mut body| {
-                            for (preset_header, matches_search) in &self.sf2_sorted_preset_headers {
+                            for (preset_index, matches_search) in &self.sf2_sorted_preset_headers {
+                                let sf2_soundfont = self.sf2_soundfont.as_ref().unwrap();
+                                let preset_header =
+                                    &sf2_soundfont.preset_headers().unwrap()[*preset_index];
+
                                 body.row(20.0, |mut row| {
                                     row.col(|ui| {
                                         ui.with_layout(

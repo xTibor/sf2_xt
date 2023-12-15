@@ -1,6 +1,5 @@
 use zerocopy::{FromBytes, FromZeroes, Unaligned, LE, U16, U32};
 
-use crate::sf2::record_iterator::IsTerminalRecord;
 use crate::sf2::utils::str_from_fixedstr;
 use crate::sf2::Sf2Result;
 
@@ -31,11 +30,5 @@ impl Sf2PresetHeader {
 
     pub fn preset(&self) -> u16 {
         self.preset.get()
-    }
-}
-
-impl IsTerminalRecord for Sf2PresetHeader {
-    fn is_terminal_record(&self) -> bool {
-        self.preset_name.starts_with(b"EOP\0")
     }
 }

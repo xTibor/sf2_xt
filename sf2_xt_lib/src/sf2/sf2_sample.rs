@@ -1,6 +1,5 @@
 use zerocopy::{FromBytes, FromZeroes, Unaligned, LE, U16, U32};
 
-use crate::sf2::record_iterator::IsTerminalRecord;
 use crate::sf2::utils::str_from_fixedstr;
 use crate::sf2::Sf2Result;
 
@@ -22,11 +21,5 @@ pub struct Sf2Sample {
 impl Sf2Sample {
     pub fn sample_name(&self) -> Sf2Result<&str> {
         str_from_fixedstr(&self.sample_name)
-    }
-}
-
-impl IsTerminalRecord for Sf2Sample {
-    fn is_terminal_record(&self) -> bool {
-        self.sample_name.starts_with(b"EOS\0")
     }
 }
