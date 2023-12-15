@@ -12,4 +12,5 @@ publish      = { workspace = true }
 
 [dependencies]
 # private dependencies
-zerocopy = { version = "0.7.31", features = ["derive"] }
+zerocopy    = { version = "0.7.31",  features = ["derive"] }
+derive_more = { version = "0.99.17", features = ["into_iterator", "display", "error", "from"], default-features = false }

@@ -1,35 +1,19 @@
-use std::error::Error;
-use std::fmt;
+use derive_more::{Display, Error, From};
 
-#[derive(Debug)]
+#[derive(Debug, Display, Error, From)]
 pub enum RiffError {
+    #[display(fmt = "Missing chunk")]
     MissingChunk,
+
+    #[display(fmt = "Normal chunks cannot have subchunks")]
     NormalChunkNoSubchunks,
+
+    #[display(fmt = "Container chunks cannot have data")]
     ContainerChunkNoData,
+
+    #[display(fmt = "Truncated chunk data")]
     TruncatedChunkData,
+
+    #[display(fmt = "Malformed identifier")]
     MalformedIdentifier,
-}
-
-impl Error for RiffError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            RiffError::MissingChunk => None,
-            RiffError::NormalChunkNoSubchunks => None,
-            RiffError::ContainerChunkNoData => None,
-            RiffError::TruncatedChunkData => None,
-            RiffError::MalformedIdentifier => None,
-        }
-    }
-}
-
-impl fmt::Display for RiffError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            RiffError::MissingChunk => write!(f, "Missing chunk"),
-            RiffError::NormalChunkNoSubchunks => write!(f, "Normal chunks cannot have subchunks"),
-            RiffError::ContainerChunkNoData => write!(f, "Container chunks cannot have data"),
-            RiffError::TruncatedChunkData => write!(f, "Truncated chunk data"),
-            RiffError::MalformedIdentifier => write!(f, "Malformed identifier"),
-        }
-    }
 }

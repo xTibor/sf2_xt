@@ -36,13 +36,13 @@ impl<'a> Sf2Info<'a> {
     fn read_zstr_chunk(&self, chunk_id: &'static str) -> Sf2Result<&'a str> {
         self.read_zstr_chunk_opt(chunk_id)
             .transpose()
-            .ok_or(Sf2Error::MissingChunk(chunk_id))?
+            .ok_or(Sf2Error::MissingChunk { chunk_id })?
     }
 
     fn read_ver_chunk(&self, chunk_id: &'static str) -> Sf2Result<(u16, u16)> {
         self.read_ver_chunk_opt(chunk_id)
             .transpose()
-            .ok_or(Sf2Error::MissingChunk(chunk_id))?
+            .ok_or(Sf2Error::MissingChunk { chunk_id })?
     }
 
     pub fn format_version(&self) -> Sf2Result<(u16, u16)> {
