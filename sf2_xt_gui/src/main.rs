@@ -424,13 +424,16 @@ impl<'a> eframe::App for Sf2GuiApp<'a> {
                             add_section(ui, "SoundFont tools", true, |ui| {
                                 #[rustfmt::skip]
                                 pub const SOUNDFONT_TOOLS_URLS: &[(&str, &str)] = &[
-                                    ("Polyphone",       "https://www.polyphone-soundfonts.com"    ),
-                                    ("SynthFont Viena", "https://www.synthfont.com"               ),
-                                    ("CDXtract",        "https://www.soundlib.com/cdxtract/"      ),
-                                    ("Awave Studio",    "https://www.fmjsoft.com/awavestudio.html"),
-                                    ("SWAMI",           "http://www.swamiproject.org"             ),
-                                    ("libInstPatch",    "http://www.swamiproject.org"             ),
-                                    //("SFEDT",           "???"                                     ),
+                                    ("Polyphone",               "https://www.polyphone-soundfonts.com"                                              ),
+                                    ("SynthFont Viena",         "https://www.synthfont.com"                                                         ),
+                                    ("CDXtract",                "https://www.soundlib.com/cdxtract/"                                                ),
+                                    ("Awave Studio",            "https://www.fmjsoft.com/awavestudio.html"                                          ),
+                                    ("SWAMI",                   "http://www.swamiproject.org"                                                       ),
+                                    ("libInstPatch",            "http://www.swamiproject.org"                                                       ),
+                                    ("GigaStudio",              "https://web.archive.org/web/20180817184554/http://tascam.com/product/gigastudio_4/"),
+                                    ("Audio Compositor",        "https://web.archive.org/web/20040131094242/http://audiocompositor.home.att.net:80/"),
+                                    ("Smurf Sound Font Editor", "https://sourceforge.net/projects/smurf/"                                           ),
+                                    //("SFEDT",                   "???"                                                                               ),
                                 ];
 
                                 for &soundfont_tool in soundfont_tools.iter().unique() {
