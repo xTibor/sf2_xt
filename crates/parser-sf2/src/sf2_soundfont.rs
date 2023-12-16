@@ -3,7 +3,8 @@ use zerocopy::FromBytes;
 use parser_riff::RiffChunk;
 
 use crate::{
-    Sf2Error, Sf2Info, Sf2Instrument, Sf2PresetHeader, Sf2PresetZone, Sf2Result, Sf2Sample,
+    Sf2Error, Sf2Info, Sf2Instrument, Sf2InstrumentZone, Sf2PresetHeader, Sf2PresetZone, Sf2Result,
+    Sf2Sample,
 };
 
 pub struct Sf2SoundFont<'a> {
@@ -73,6 +74,24 @@ impl<'a> Sf2SoundFont<'a> {
             .ok_or(Sf2Error::MissingTerminatorRecord { chunk_id: "inst" })?;
 
         Ok(slice_inst)
+    }
+
+    pub fn instrument_zones(&'a self) -> Sf2Result<&'a [Sf2InstrumentZone]> {
+        let chunk_pdta = self
+            .chunk_sfbk
+            .subchunk("pdta")?
+            .ok_or(Sf2Error::MissingChunk { chunk_id: "pdta" })?;
+
+        let chunk_ibag = chunk_pdta
+            .subchunk("ibag")?
+            .ok_or(Sf2Error::MissingChunk { chunk_id: "ibag" })?;
+
+        let (_, slice_ibag) = Sf2InstrumentZone::slice_from(chunk_ibag.chunk_data()?)
+            .ok_or(Sf2Error::MalformedChunk { chunk_id: "ibag" })?
+            .split_last()
+            .ok_or(Sf2Error::MissingTerminatorRecord { chunk_id: "ibag" })?;
+
+        Ok(slice_ibag)
     }
 
     pub fn samples(&self) -> Sf2Result<&'a [Sf2Sample]> {

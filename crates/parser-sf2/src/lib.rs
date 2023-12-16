@@ -1,6 +1,7 @@
 mod error;
 mod sf2_info;
 mod sf2_instrument;
+mod sf2_instrument_zone;
 mod sf2_preset_header;
 mod sf2_preset_zone;
 mod sf2_sample;
@@ -13,6 +14,7 @@ pub use sf2_soundfont::Sf2SoundFont;
 
 pub use sf2_info::Sf2Info;
 pub use sf2_instrument::Sf2Instrument;
+pub use sf2_instrument_zone::Sf2InstrumentZone;
 pub use sf2_preset_header::Sf2PresetHeader;
 pub use sf2_preset_zone::Sf2PresetZone;
 pub use sf2_sample::Sf2Sample;

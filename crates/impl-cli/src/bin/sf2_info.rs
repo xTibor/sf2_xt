@@ -47,7 +47,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     for preset_zone in sf2_soundfont.preset_zones()? {
-        println!("PRESET ZONE {} {}", preset_zone.generator_index, preset_zone.modulator_index)
+        println!(
+            "PRESET ZONE {} {}",
+            preset_zone.generator_index, preset_zone.modulator_index
+        )
     }
 
     for instrument in sf2_soundfont.instruments()? {
@@ -55,6 +58,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             "INSTRUMENT {:5} {}",
             instrument.instrument_bag_index,
             instrument.instrument_name()?,
+        )
+    }
+
+    for instrument_zone in sf2_soundfont.instrument_zones()? {
+        println!(
+            "INSTRUMENT ZONE {} {}",
+            instrument_zone.generator_index, instrument_zone.modulator_index
         )
     }
 
