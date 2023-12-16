@@ -15,8 +15,8 @@ members = [
     "crates/parser-sf2",
     "crates/midi-defs",
 
-    "crates/sf2_xt_cli",
-    "crates/sf2_xt_gui",
+    "crates/impl-cli",
+    "crates/impl-gui",
 ]
 
 [workspace.dependencies]

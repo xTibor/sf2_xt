@@ -1322,6 +1322,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "impl-cli"
+version = "0.1.0"
+dependencies = [
+ "itertools 0.12.0",
+ "memmap",
+ "parser-riff",
+ "parser-sf2",
+]
+
+[[package]]
+name = "impl-gui"
+version = "0.1.0"
+dependencies = [
+ "eframe",
+ "egui_extras",
+ "egui_extras_xt",
+ "itertools 0.12.0",
+ "memmap",
+ "parser-sf2",
+ "strum",
+]
+
+[[package]]
 name = "indexmap"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2167,29 +2190,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.41",
-]
-
-[[package]]
-name = "sf2_xt_cli"
-version = "0.1.0"
-dependencies = [
- "itertools 0.12.0",
- "memmap",
- "parser-riff",
- "parser-sf2",
-]
-
-[[package]]
-name = "sf2_xt_gui"
-version = "0.1.0"
-dependencies = [
- "eframe",
- "egui_extras",
- "egui_extras_xt",
- "itertools 0.12.0",
- "memmap",
- "parser-sf2",
- "strum",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 [package]
-name         = "sf2_xt_cli"
+name         = "impl-cli"
 description  = "Command-line tools for SoundFont files"
 version      = { workspace = true }
 authors      = { workspace = true }

@@ -676,7 +676,7 @@ fn main() -> Result<(), eframe::Error> {
     };
 
     eframe::run_native(
-        "sf2_xt_gui",
+        "impl-gui",
         options,
         Box::new(|_| {
             let mut app = Sf2GuiApp::new();

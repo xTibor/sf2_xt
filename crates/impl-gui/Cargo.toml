@@ -1,5 +1,5 @@
 [package]
-name         = "sf2_xt_gui"
+name         = "impl-gui"
 description  = "SoundFont browser application"
 version      = { workspace = true }
 authors      = { workspace = true }
