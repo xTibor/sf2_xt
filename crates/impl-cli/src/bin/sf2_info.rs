@@ -39,23 +39,27 @@ fn main() -> Result<(), Box<dyn Error>> {
         .sorted_by_key(|phdr| phdr.bank_preset())
     {
         println!(
-            "[{:3}:{:3}] {}",
+            "PRESET HEADER [{:3}:{:3}] {}",
             preset_header.bank(),
             preset_header.preset(),
             preset_header.preset_name()?,
         )
     }
 
+    for preset_zone in sf2_soundfont.preset_zones()? {
+        println!("PRESET ZONE {} {}", preset_zone.generator_index, preset_zone.modulator_index)
+    }
+
     for instrument in sf2_soundfont.instruments()? {
         println!(
-            "{:5} {}",
+            "INSTRUMENT {:5} {}",
             instrument.instrument_bag_index,
             instrument.instrument_name()?,
         )
     }
 
     for sample in sf2_soundfont.samples()? {
-        println!("{}", sample.sample_name()?,)
+        println!("SAMPLE {}", sample.sample_name()?,)
     }
 
     Ok(())
