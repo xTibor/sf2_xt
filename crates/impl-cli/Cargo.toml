@@ -15,5 +15,5 @@ parser-riff = { workspace = true }
 parser-sf2  = { workspace = true }
 
 # common workspace dependencies
-itertools  = { workspace = true }
-memmap     = { workspace = true }
+itertools = { workspace = true }
+memmap    = { workspace = true }

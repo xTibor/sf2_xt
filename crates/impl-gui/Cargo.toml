@@ -11,12 +11,12 @@ rust-version = { workspace = true }
 publish      = { workspace = true }
 
 [dependencies]
-parser-sf2  = { workspace = true }
+parser-sf2 = { workspace = true }
 
 # common workspace dependencies
-itertools  = { workspace = true }
-memmap     = { workspace = true }
-strum      = { workspace = true }
+itertools = { workspace = true }
+memmap    = { workspace = true }
+strum     = { workspace = true }
 
 # egui dependencies
 eframe         = { version = "0.24.0" }
