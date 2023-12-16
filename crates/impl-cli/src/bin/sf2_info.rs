@@ -53,11 +53,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         )
     }
 
-    for instrument in sf2_soundfont.instruments()? {
+    for instrument_header in sf2_soundfont.instrument_headers()? {
         println!(
-            "INSTRUMENT {:5} {}",
-            instrument.instrument_bag_index,
-            instrument.instrument_name()?,
+            "INSTRUMENT HEADER {:5} {}",
+            instrument_header.instrument_bag_index,
+            instrument_header.instrument_name()?,
         )
     }
 

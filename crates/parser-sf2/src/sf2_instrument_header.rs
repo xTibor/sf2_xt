@@ -5,12 +5,12 @@ use crate::Sf2Result;
 
 #[derive(Debug, FromZeroes, FromBytes, Unaligned)]
 #[repr(packed)]
-pub struct Sf2Instrument {
+pub struct Sf2InstrumentHeader {
     pub instrument_name: [u8; 20],
     pub instrument_bag_index: U16<LE>,
 }
 
-impl Sf2Instrument {
+impl Sf2InstrumentHeader {
     pub fn instrument_name(&self) -> Sf2Result<&str> {
         str_from_fixedstr(&self.instrument_name)
     }
