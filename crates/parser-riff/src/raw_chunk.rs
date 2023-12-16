@@ -1,4 +1,4 @@
-use crate::riff::{RiffError, RiffResult};
+use crate::{RiffError, RiffResult};
 
 pub enum RawChunk<'a> {
     Container {

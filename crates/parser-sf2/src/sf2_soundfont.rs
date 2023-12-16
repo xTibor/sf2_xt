@@ -1,8 +1,8 @@
 use zerocopy::FromBytes;
 
-use crate::riff::RiffChunk;
+use parser_riff::RiffChunk;
 
-use crate::sf2::{Sf2Error, Sf2Info, Sf2Instrument, Sf2PresetHeader, Sf2Result, Sf2Sample};
+use crate::{Sf2Error, Sf2Info, Sf2Instrument, Sf2PresetHeader, Sf2Result, Sf2Sample};
 
 pub struct Sf2SoundFont<'a> {
     chunk_sfbk: RiffChunk<'a>,

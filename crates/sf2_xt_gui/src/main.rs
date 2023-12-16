@@ -21,7 +21,7 @@ use egui_extras_xt::show_about_window;
 use egui_extras_xt::ui::hyperlink_with_icon::HyperlinkWithIcon;
 use egui_extras_xt::ui::widgets_from_iter::RadioValueFromIter;
 
-use sf2_xt_lib::sf2::{Sf2PresetHeader, Sf2SoundFont};
+use parser_sf2::{Sf2PresetHeader, Sf2SoundFont};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

@@ -4,7 +4,7 @@ use std::fs::File;
 
 use itertools::Itertools;
 use memmap::MmapOptions;
-use sf2_xt_lib::sf2::Sf2SoundFont;
+use parser_sf2::Sf2SoundFont;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let sf2_path = env::args().nth(1).expect("No input file argument");

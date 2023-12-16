@@ -11,14 +11,22 @@ publish = false
 [workspace]
 resolver = "2"
 members = [
+    "crates/parser-riff",
+    "crates/parser-sf2",
+    "crates/midi-defs",
+
     "crates/sf2_xt_cli",
     "crates/sf2_xt_gui",
-    "crates/sf2_xt_lib",
 ]
 
 [workspace.dependencies]
-sf2_xt_lib = { path = "crates/sf2_xt_lib" }
+parser-riff = { path = "crates/parser-riff" }
+parser-sf2  = { path = "crates/parser-sf2"  }
+midi-defs   = { path = "crates/midi-defs"  }
 
 # common workspace dependencies
-itertools = { version = "0.12.0" }
-memmap    = { version = "0.7.0"  }
+derive_more = { version = "0.99.17", features = ["display", "error", "from"], default-features = false }
+itertools   = { version = "0.12.0" }
+memmap      = { version = "0.7.0"  }
+strum       = { version = "0.25.0", features = ["derive"] }
+zerocopy    = { version = "0.7.31", features = ["derive"] }

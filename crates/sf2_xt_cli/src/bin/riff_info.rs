@@ -2,7 +2,7 @@ use std::env;
 use std::fs::File;
 
 use memmap::MmapOptions;
-use sf2_xt_lib::riff::{RiffChunk, RiffResult};
+use parser_riff::{RiffChunk, RiffResult};
 
 pub fn print_riff_chunk(chunk: &RiffChunk, chunk_level: usize) -> RiffResult<()> {
     match chunk {

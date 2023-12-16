@@ -1,7 +1,7 @@
 use zerocopy::{FromBytes, FromZeroes, Unaligned, LE, U16};
 
-use crate::sf2::utils::str_from_fixedstr;
-use crate::sf2::Sf2Result;
+use crate::utils::str_from_fixedstr;
+use crate::Sf2Result;
 
 #[derive(Debug, FromZeroes, FromBytes, Unaligned)]
 #[repr(packed)]

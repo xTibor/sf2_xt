@@ -1,8 +1,9 @@
 use zerocopy::FromBytes;
 
-use crate::riff::RiffChunk;
-use crate::sf2::utils::str_from_zstr;
-use crate::sf2::{Sf2Error, Sf2Result, Sf2Version};
+use parser_riff::RiffChunk;
+
+use crate::utils::str_from_zstr;
+use crate::{Sf2Error, Sf2Result, Sf2Version};
 
 pub struct Sf2Info<'a> {
     chunk_info: &'a RiffChunk<'a>,

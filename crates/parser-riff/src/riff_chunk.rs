@@ -1,7 +1,7 @@
 use std::fmt::{self, Debug};
 use std::str;
 
-use crate::riff::{RawChunk, RawChunkIterator, RiffError, RiffResult};
+use crate::{RawChunk, RawChunkIterator, RiffError, RiffResult};
 
 pub enum RiffChunk<'a> {
     Container {

@@ -1,6 +1,6 @@
 [package]
-name         = "sf2_xt_cli"
-description  = "Command-line tools for SoundFont files"
+name         = "parser-riff"
+description  = "A zero-copy RIFF parser library"
 version      = { workspace = true }
 authors      = { workspace = true }
 license      = { workspace = true }
@@ -11,9 +11,5 @@ rust-version = { workspace = true }
 publish      = { workspace = true }
 
 [dependencies]
-parser-riff = { workspace = true }
-parser-sf2  = { workspace = true }
-
 # common workspace dependencies
-itertools  = { workspace = true }
-memmap     = { workspace = true }
+derive_more = { workspace = true }

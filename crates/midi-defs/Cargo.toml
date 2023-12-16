@@ -1,6 +1,6 @@
 [package]
-name         = "sf2_xt_lib"
-description  = "A zero-copy SoundFont parser library"
+name         = "midi-defs"
+description  = "MIDI data definitions"
 version      = { workspace = true }
 authors      = { workspace = true }
 license      = { workspace = true }
@@ -11,6 +11,3 @@ rust-version = { workspace = true }
 publish      = { workspace = true }
 
 [dependencies]
-# private dependencies
-zerocopy    = { version = "0.7.31",  features = ["derive"] }
-derive_more = { version = "0.99.17", features = ["into_iterator", "display", "error", "from"], default-features = false }

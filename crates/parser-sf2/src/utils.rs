@@ -1,7 +1,7 @@
 use std::ffi::CStr;
 use std::str;
 
-use crate::sf2::{Sf2Error, Sf2Result};
+use crate::{Sf2Error, Sf2Result};
 
 pub(crate) fn str_from_zstr(data: &[u8]) -> Sf2Result<&str> {
     CStr::from_bytes_until_nul(data)

@@ -1,4 +1,4 @@
-use crate::riff::RiffError;
+use parser_riff::RiffError;
 
 use derive_more::{Display, Error, From};
 
