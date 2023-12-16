@@ -4,7 +4,7 @@ use parser_riff::RiffChunk;
 
 use crate::{
     Sf2Error, Sf2Info, Sf2InstrumentHeader, Sf2InstrumentZone, Sf2PresetHeader, Sf2PresetZone,
-    Sf2Result, Sf2Sample,
+    Sf2Result, Sf2SampleHeader,
 };
 
 pub struct Sf2SoundFont<'a> {
@@ -94,7 +94,7 @@ impl<'a> Sf2SoundFont<'a> {
         Ok(slice_ibag)
     }
 
-    pub fn samples(&self) -> Sf2Result<&'a [Sf2Sample]> {
+    pub fn sample_headers(&self) -> Sf2Result<&'a [Sf2SampleHeader]> {
         let chunk_pdta = self
             .chunk_sfbk
             .subchunk("pdta")?
@@ -104,7 +104,7 @@ impl<'a> Sf2SoundFont<'a> {
             .subchunk("shdr")?
             .ok_or(Sf2Error::MissingChunk { chunk_id: "shdr" })?;
 
-        let (_, slice_shdr) = Sf2Sample::slice_from(chunk_shdr.chunk_data()?)
+        let (_, slice_shdr) = Sf2SampleHeader::slice_from(chunk_shdr.chunk_data()?)
             .ok_or(Sf2Error::MalformedChunk { chunk_id: "shdr" })?
             .split_last()
             .ok_or(Sf2Error::MissingTerminatorRecord { chunk_id: "shdr" })?;

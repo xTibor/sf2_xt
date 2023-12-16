@@ -68,8 +68,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         )
     }
 
-    for sample in sf2_soundfont.samples()? {
-        println!("SAMPLE {}", sample.sample_name()?,)
+    for sample_header in sf2_soundfont.sample_headers()? {
+        println!("SAMPLE HEADER {}", sample_header.sample_name()?,)
     }
 
     Ok(())

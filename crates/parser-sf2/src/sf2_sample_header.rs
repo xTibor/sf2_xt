@@ -5,7 +5,7 @@ use crate::Sf2Result;
 
 #[derive(Debug, FromZeroes, FromBytes, Unaligned)]
 #[repr(packed)]
-pub struct Sf2Sample {
+pub struct Sf2SampleHeader {
     pub sample_name: [u8; 20],
     pub start: U32<LE>,
     pub end: U32<LE>,
@@ -18,7 +18,7 @@ pub struct Sf2Sample {
     pub sample_type: U16<LE>, //TODO: SFSampleLink sfSampleType;
 }
 
-impl Sf2Sample {
+impl Sf2SampleHeader {
     pub fn sample_name(&self) -> Sf2Result<&str> {
         str_from_fixedstr(&self.sample_name)
     }
