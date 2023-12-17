@@ -10,17 +10,17 @@ pub enum Sf2Error {
 
     #[display(fmt = "Missing '{chunk_id:}' chunk")]
     MissingChunk {
-        chunk_id: &'static str,
+        chunk_id: String,
     },
 
     #[display(fmt = "Malformed '{chunk_id:}' chunk")]
     MalformedChunk {
-        chunk_id: &'static str,
+        chunk_id: String,
     },
 
     #[display(fmt = "Missing terminator record for '{chunk_id:}' chunk")]
     MissingTerminatorRecord {
-        chunk_id: &'static str,
+        chunk_id: String,
     },
 
     #[display(fmt = "Malformed zero-terminated string")]

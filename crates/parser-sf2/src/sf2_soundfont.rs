@@ -11,6 +11,21 @@ pub struct Sf2SoundFont<'a> {
     chunk_sfbk: RiffChunk<'a>,
 }
 
+macro_rules! sf2_array_ref {
+    ($chunk:ident, $chunk_id:expr, $type_name:ident) => {{
+        let (_, chunk_slice) = $type_name::slice_from($chunk.chunk_data()?)
+            .ok_or(Sf2Error::MalformedChunk {
+                chunk_id: $chunk_id.to_owned(),
+            })?
+            .split_last()
+            .ok_or(Sf2Error::MissingTerminatorRecord {
+                chunk_id: $chunk_id.to_owned(),
+            })?;
+
+        Ok(chunk_slice)
+    }};
+}
+
 impl<'a> Sf2SoundFont<'a> {
     pub fn new(buffer: &'a [u8]) -> Sf2Result<Sf2SoundFont<'a>> {
         let chunk_sfbk = RiffChunk::new(buffer)?;
@@ -29,12 +44,7 @@ impl<'a> Sf2SoundFont<'a> {
             .subchunk("pdta")?
             .subchunk("phdr")?;
 
-        let (_, slice_phdr) = Sf2PresetHeader::slice_from(chunk_phdr.chunk_data()?)
-            .ok_or(Sf2Error::MalformedChunk { chunk_id: "phdr" })?
-            .split_last()
-            .ok_or(Sf2Error::MissingTerminatorRecord { chunk_id: "phdr" })?;
-
-        Ok(slice_phdr)
+        sf2_array_ref!(chunk_phdr, "phdr", Sf2PresetHeader)
     }
 
     pub fn preset_zones(&'a self) -> Sf2Result<&'a [Sf2PresetZone]> {
@@ -44,12 +54,7 @@ impl<'a> Sf2SoundFont<'a> {
             .subchunk("pdta")?
             .subchunk("pbag")?;
 
-        let (_, slice_pbag) = Sf2PresetZone::slice_from(chunk_pbag.chunk_data()?)
-            .ok_or(Sf2Error::MalformedChunk { chunk_id: "pbag" })?
-            .split_last()
-            .ok_or(Sf2Error::MissingTerminatorRecord { chunk_id: "pbag" })?;
-
-        Ok(slice_pbag)
+        sf2_array_ref!(chunk_pbag, "pbag", Sf2PresetZone)
     }
 
     pub fn instrument_headers(&'a self) -> Sf2Result<&'a [Sf2InstrumentHeader]> {
@@ -59,12 +64,7 @@ impl<'a> Sf2SoundFont<'a> {
             .subchunk("pdta")?
             .subchunk("inst")?;
 
-        let (_, slice_inst) = Sf2InstrumentHeader::slice_from(chunk_inst.chunk_data()?)
-            .ok_or(Sf2Error::MalformedChunk { chunk_id: "inst" })?
-            .split_last()
-            .ok_or(Sf2Error::MissingTerminatorRecord { chunk_id: "inst" })?;
-
-        Ok(slice_inst)
+        sf2_array_ref!(chunk_inst, "inst", Sf2InstrumentHeader)
     }
 
     pub fn instrument_zones(&'a self) -> Sf2Result<&'a [Sf2InstrumentZone]> {
@@ -74,12 +74,7 @@ impl<'a> Sf2SoundFont<'a> {
             .subchunk("pdta")?
             .subchunk("ibag")?;
 
-        let (_, slice_ibag) = Sf2InstrumentZone::slice_from(chunk_ibag.chunk_data()?)
-            .ok_or(Sf2Error::MalformedChunk { chunk_id: "ibag" })?
-            .split_last()
-            .ok_or(Sf2Error::MissingTerminatorRecord { chunk_id: "ibag" })?;
-
-        Ok(slice_ibag)
+        sf2_array_ref!(chunk_ibag, "ibag", Sf2InstrumentZone)
     }
 
     pub fn sample_headers(&self) -> Sf2Result<&'a [Sf2SampleHeader]> {
@@ -89,12 +84,7 @@ impl<'a> Sf2SoundFont<'a> {
             .subchunk("pdta")?
             .subchunk("shdr")?;
 
-        let (_, slice_shdr) = Sf2SampleHeader::slice_from(chunk_shdr.chunk_data()?)
-            .ok_or(Sf2Error::MalformedChunk { chunk_id: "shdr" })?
-            .split_last()
-            .ok_or(Sf2Error::MissingTerminatorRecord { chunk_id: "shdr" })?;
-
-        Ok(slice_shdr)
+        sf2_array_ref!(chunk_shdr, "shdr", Sf2SampleHeader)
     }
 
     pub fn info(&self) -> Sf2Result<Sf2Info> {
