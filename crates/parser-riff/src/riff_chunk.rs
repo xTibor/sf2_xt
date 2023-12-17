@@ -107,13 +107,21 @@ impl<'a> RiffChunk<'a> {
         }
     }
 
-    pub fn subchunk(&self, chunk_id: &str) -> RiffResult<Option<&RiffChunk<'a>>> {
+    pub fn subchunk_opt(&self, chunk_id: &str) -> RiffResult<Option<&RiffChunk<'a>>> {
         match self {
             RiffChunk::Container { subchunks, .. } => Ok(subchunks
                 .iter()
                 .find(|subchunk| subchunk.chunk_id() == chunk_id)),
             RiffChunk::Normal { .. } => Err(RiffError::NormalChunkNoSubchunks),
         }
+    }
+
+    pub fn subchunk(&self, chunk_id: &str) -> RiffResult<&RiffChunk<'a>> {
+        self.subchunk_opt(chunk_id)
+            .transpose()
+            .ok_or(RiffError::MissingSubchunk {
+                chunk_id: chunk_id.to_owned(),
+            })?
     }
 
     pub fn subchunks(&self) -> RiffResult<&[RiffChunk<'a>]> {

@@ -15,7 +15,7 @@ impl<'a> Sf2Info<'a> {
     }
 
     fn read_zstr_chunk_opt(&self, chunk_id: &'static str) -> Sf2Result<Option<&'a str>> {
-        if let Some(chunk) = self.chunk_info.subchunk(chunk_id)? {
+        if let Some(chunk) = self.chunk_info.subchunk_opt(chunk_id)? {
             Ok(Some(str_from_zstr(chunk.chunk_data()?)?))
         } else {
             Ok(None)
@@ -23,7 +23,7 @@ impl<'a> Sf2Info<'a> {
     }
 
     fn read_ver_chunk_opt(&self, chunk_id: &'static str) -> Sf2Result<Option<(u16, u16)>> {
-        if let Some(chunk) = self.chunk_info.subchunk(chunk_id)? {
+        if let Some(chunk) = self.chunk_info.subchunk_opt(chunk_id)? {
             if let Some(Sf2Version { major, minor }) = Sf2Version::read_from(chunk.chunk_data()?) {
                 Ok(Some((major.get(), minor.get())))
             } else {
