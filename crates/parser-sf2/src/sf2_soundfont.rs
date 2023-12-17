@@ -11,19 +11,17 @@ pub struct Sf2SoundFont<'a> {
     chunk_sfbk: RiffChunk<'a>,
 }
 
-macro_rules! sf2_array_ref {
-    ($chunk:ident, $chunk_id:expr, $type_name:ident) => {{
-        let (_, chunk_slice) = $type_name::slice_from($chunk.chunk_data()?)
-            .ok_or(Sf2Error::MalformedChunk {
-                chunk_id: $chunk_id.to_owned(),
-            })?
-            .split_last()
-            .ok_or(Sf2Error::MissingTerminatorRecord {
-                chunk_id: $chunk_id.to_owned(),
-            })?;
+fn sf2_array_ref<'a, T: FromBytes>(chunk: &RiffChunk<'a>, chunk_id: &str) -> Sf2Result<&'a [T]> {
+    let (_, typed_slice) = T::slice_from(chunk.chunk_data()?)
+        .ok_or(Sf2Error::MalformedChunk {
+            chunk_id: chunk_id.to_owned(),
+        })?
+        .split_last()
+        .ok_or(Sf2Error::MissingTerminatorRecord {
+            chunk_id: chunk_id.to_owned(),
+        })?;
 
-        Ok(chunk_slice)
-    }};
+    Ok(typed_slice)
 }
 
 impl<'a> Sf2SoundFont<'a> {
@@ -44,7 +42,7 @@ impl<'a> Sf2SoundFont<'a> {
             .subchunk("pdta")?
             .subchunk("phdr")?;
 
-        sf2_array_ref!(chunk_phdr, "phdr", Sf2PresetHeader)
+        sf2_array_ref(chunk_phdr, "phdr")
     }
 
     pub fn preset_zones(&'a self) -> Sf2Result<&'a [Sf2PresetZone]> {
@@ -54,7 +52,7 @@ impl<'a> Sf2SoundFont<'a> {
             .subchunk("pdta")?
             .subchunk("pbag")?;
 
-        sf2_array_ref!(chunk_pbag, "pbag", Sf2PresetZone)
+        sf2_array_ref(chunk_pbag, "pbag")
     }
 
     pub fn instrument_headers(&'a self) -> Sf2Result<&'a [Sf2InstrumentHeader]> {
@@ -64,7 +62,7 @@ impl<'a> Sf2SoundFont<'a> {
             .subchunk("pdta")?
             .subchunk("inst")?;
 
-        sf2_array_ref!(chunk_inst, "inst", Sf2InstrumentHeader)
+        sf2_array_ref(chunk_inst, "inst")
     }
 
     pub fn instrument_zones(&'a self) -> Sf2Result<&'a [Sf2InstrumentZone]> {
@@ -74,7 +72,7 @@ impl<'a> Sf2SoundFont<'a> {
             .subchunk("pdta")?
             .subchunk("ibag")?;
 
-        sf2_array_ref!(chunk_ibag, "ibag", Sf2InstrumentZone)
+        sf2_array_ref(chunk_ibag, "ibag")
     }
 
     pub fn sample_headers(&self) -> Sf2Result<&'a [Sf2SampleHeader]> {
@@ -84,7 +82,7 @@ impl<'a> Sf2SoundFont<'a> {
             .subchunk("pdta")?
             .subchunk("shdr")?;
 
-        sf2_array_ref!(chunk_shdr, "shdr", Sf2SampleHeader)
+        sf2_array_ref(chunk_shdr, "shdr")
     }
 
     pub fn info(&self) -> Sf2Result<Sf2Info> {
