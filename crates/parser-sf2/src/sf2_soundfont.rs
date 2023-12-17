@@ -31,53 +31,50 @@ impl<'a> Sf2TypedSlice for RiffChunk<'a> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 pub struct Sf2SoundFont<'a> {
-    chunk_sfbk: RiffChunk<'a>,
+    root_chunk: RiffChunk<'a>,
 }
 
 impl<'a> Sf2SoundFont<'a> {
     pub fn new(buffer: &'a [u8]) -> Sf2Result<Sf2SoundFont<'a>> {
-        let chunk_sfbk = RiffChunk::new(buffer)?;
+        let root_chunk = RiffChunk::new(buffer)?;
 
-        if chunk_sfbk.chunk_id() != "sfbk" {
+        if root_chunk.chunk_id() != "sfbk" {
             return Err(Sf2Error::InvalidRootChunk);
         }
 
-        Ok(Sf2SoundFont { chunk_sfbk })
+        Ok(Sf2SoundFont { root_chunk })
     }
 
     pub fn preset_headers(&'a self) -> Sf2Result<&'a [Sf2PresetHeader]> {
-        self.chunk_sfbk
+        self.root_chunk
             .subchunk("pdta")?
             .subchunk("phdr")?
             .as_typed_slice()
     }
 
     pub fn preset_zones(&'a self) -> Sf2Result<&'a [Sf2PresetZone]> {
-        self.chunk_sfbk
+        self.root_chunk
             .subchunk("pdta")?
             .subchunk("pbag")?
             .as_typed_slice()
     }
 
     pub fn instrument_headers(&'a self) -> Sf2Result<&'a [Sf2InstrumentHeader]> {
-        self
-            .chunk_sfbk
+        self.root_chunk
             .subchunk("pdta")?
             .subchunk("inst")?
             .as_typed_slice()
     }
 
     pub fn instrument_zones(&'a self) -> Sf2Result<&'a [Sf2InstrumentZone]> {
-        self
-            .chunk_sfbk
+        self.root_chunk
             .subchunk("pdta")?
             .subchunk("ibag")?
             .as_typed_slice()
     }
 
     pub fn sample_headers(&'a self) -> Sf2Result<&'a [Sf2SampleHeader]> {
-        self
-            .chunk_sfbk
+        self.root_chunk
             .subchunk("pdta")?
             .subchunk("shdr")?
             .as_typed_slice()
@@ -86,7 +83,7 @@ impl<'a> Sf2SoundFont<'a> {
     pub fn info(&self) -> Sf2Result<Sf2Info> {
         #[rustfmt::skip]
         let chunk_info = self
-            .chunk_sfbk
+            .root_chunk
             .subchunk("INFO")?;
 
         Sf2Info::new(chunk_info)
