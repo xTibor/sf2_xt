@@ -3,7 +3,8 @@ use zerocopy::FromBytes;
 use parser_riff::RiffChunk;
 
 use crate::{
-    Sf2Error, Sf2Info, Sf2InstrumentHeader, Sf2InstrumentZone, Sf2PresetHeader, Sf2PresetZone,
+    Sf2Error, Sf2Info, Sf2InstrumentGenerator, Sf2InstrumentHeader, Sf2InstrumentModulator,
+    Sf2InstrumentZone, Sf2PresetGenerator, Sf2PresetHeader, Sf2PresetModulator, Sf2PresetZone,
     Sf2Result, Sf2SampleHeader,
 };
 
@@ -59,6 +60,20 @@ impl<'a> Sf2SoundFont<'a> {
             .as_typed_slice()
     }
 
+    pub fn preset_generators(&'a self) -> Sf2Result<&'a [Sf2PresetGenerator]> {
+        self.root_chunk
+            .subchunk("pdta")?
+            .subchunk("pgen")?
+            .as_typed_slice()
+    }
+
+    pub fn preset_modulators(&'a self) -> Sf2Result<&'a [Sf2PresetModulator]> {
+        self.root_chunk
+            .subchunk("pdta")?
+            .subchunk("pmod")?
+            .as_typed_slice()
+    }
+
     pub fn instrument_headers(&'a self) -> Sf2Result<&'a [Sf2InstrumentHeader]> {
         self.root_chunk
             .subchunk("pdta")?
@@ -70,6 +85,20 @@ impl<'a> Sf2SoundFont<'a> {
         self.root_chunk
             .subchunk("pdta")?
             .subchunk("ibag")?
+            .as_typed_slice()
+    }
+
+    pub fn instrument_generators(&'a self) -> Sf2Result<&'a [Sf2InstrumentGenerator]> {
+        self.root_chunk
+            .subchunk("pdta")?
+            .subchunk("igen")?
+            .as_typed_slice()
+    }
+
+    pub fn instrument_modulators(&'a self) -> Sf2Result<&'a [Sf2InstrumentModulator]> {
+        self.root_chunk
+            .subchunk("pdta")?
+            .subchunk("imod")?
             .as_typed_slice()
     }
 
