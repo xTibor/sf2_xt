@@ -7,21 +7,31 @@ use crate::{
     Sf2Result, Sf2SampleHeader,
 };
 
-pub struct Sf2SoundFont<'a> {
-    chunk_sfbk: RiffChunk<'a>,
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+trait Sf2TypedSlice {
+    fn as_typed_slice<T: FromBytes>(&self) -> Sf2Result<&[T]>;
 }
 
-fn sf2_array_ref<'a, T: FromBytes>(chunk: &RiffChunk<'a>, chunk_id: &str) -> Sf2Result<&'a [T]> {
-    let (_, typed_slice) = T::slice_from(chunk.chunk_data()?)
-        .ok_or(Sf2Error::MalformedChunk {
-            chunk_id: chunk_id.to_owned(),
-        })?
-        .split_last()
-        .ok_or(Sf2Error::MissingTerminatorRecord {
-            chunk_id: chunk_id.to_owned(),
-        })?;
+impl<'a> Sf2TypedSlice for RiffChunk<'a> {
+    fn as_typed_slice<T: FromBytes>(&self) -> Sf2Result<&[T]> {
+        let (_, typed_slice) = T::slice_from(self.chunk_data()?)
+            .ok_or(Sf2Error::MalformedChunk {
+                chunk_id: self.chunk_id().to_owned(),
+            })?
+            .split_last()
+            .ok_or(Sf2Error::MissingTerminatorRecord {
+                chunk_id: self.chunk_id().to_owned(),
+            })?;
 
-    Ok(typed_slice)
+        Ok(typed_slice)
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+pub struct Sf2SoundFont<'a> {
+    chunk_sfbk: RiffChunk<'a>,
 }
 
 impl<'a> Sf2SoundFont<'a> {
@@ -36,53 +46,41 @@ impl<'a> Sf2SoundFont<'a> {
     }
 
     pub fn preset_headers(&'a self) -> Sf2Result<&'a [Sf2PresetHeader]> {
-        #[rustfmt::skip]
-        let chunk_phdr = self
-            .chunk_sfbk
+        self.chunk_sfbk
             .subchunk("pdta")?
-            .subchunk("phdr")?;
-
-        sf2_array_ref(chunk_phdr, "phdr")
+            .subchunk("phdr")?
+            .as_typed_slice()
     }
 
     pub fn preset_zones(&'a self) -> Sf2Result<&'a [Sf2PresetZone]> {
-        #[rustfmt::skip]
-        let chunk_pbag = self
-            .chunk_sfbk
+        self.chunk_sfbk
             .subchunk("pdta")?
-            .subchunk("pbag")?;
-
-        sf2_array_ref(chunk_pbag, "pbag")
+            .subchunk("pbag")?
+            .as_typed_slice()
     }
 
     pub fn instrument_headers(&'a self) -> Sf2Result<&'a [Sf2InstrumentHeader]> {
-        #[rustfmt::skip]
-        let chunk_inst = self
+        self
             .chunk_sfbk
             .subchunk("pdta")?
-            .subchunk("inst")?;
-
-        sf2_array_ref(chunk_inst, "inst")
+            .subchunk("inst")?
+            .as_typed_slice()
     }
 
     pub fn instrument_zones(&'a self) -> Sf2Result<&'a [Sf2InstrumentZone]> {
-        #[rustfmt::skip]
-        let chunk_ibag = self
+        self
             .chunk_sfbk
             .subchunk("pdta")?
-            .subchunk("ibag")?;
-
-        sf2_array_ref(chunk_ibag, "ibag")
+            .subchunk("ibag")?
+            .as_typed_slice()
     }
 
-    pub fn sample_headers(&self) -> Sf2Result<&'a [Sf2SampleHeader]> {
-        #[rustfmt::skip]
-        let chunk_shdr = self
+    pub fn sample_headers(&'a self) -> Sf2Result<&'a [Sf2SampleHeader]> {
+        self
             .chunk_sfbk
             .subchunk("pdta")?
-            .subchunk("shdr")?;
-
-        sf2_array_ref(chunk_shdr, "shdr")
+            .subchunk("shdr")?
+            .as_typed_slice()
     }
 
     pub fn info(&self) -> Sf2Result<Sf2Info> {
